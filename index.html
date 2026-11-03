@@ -742,6 +742,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     }
     async function signOutUser() {
       if (!confirm('登出後會回到全新的訪客狀態。你的紀錄會保存在帳號裡，下次登入就能找回。要登出嗎？')) return;
+      studyDirty = true;
+      await pushStudy();
+      // 確定已存進帳號才清掉本機這份，下一位使用者從空白開始；沒傳成功就留著，避免紀錄消失
+      if (studySyncReady && !studyDirty) { try { localStorage.removeItem(STUDY_KEY); } catch (e) {} }
       await supabaseClient.auth.signOut();
       location.reload();
     }
@@ -1059,7 +1063,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
     async function initApp() {
       await initUserSession();
-      await Promise.all([fetchAllPublicQuestions(), fetchAllFlashcards()]);
+      await Promise.all([fetchAllPublicQuestions(), fetchAllFlashcards(), pullStudy()]);
     }
 
     async function fetchAllPublicQuestions() {
@@ -1369,7 +1373,61 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       return base;
     }
     let study = loadStudy();
-    function saveStudy() { try { localStorage.setItem(STUDY_KEY, JSON.stringify(study)); } catch (e) {} }
+    function saveStudy() {
+      try { localStorage.setItem(STUDY_KEY, JSON.stringify(study)); } catch (e) {}
+      scheduleStudySync();
+    }
+
+    // ---- 學習紀錄雲端同步（study_logs，每人一筆，只能讀寫自己的）----
+    // 合併規則：同一天的題數、各科／章節的作答數取較大的一邊，避免同一份紀錄被加兩次
+    let studySyncReady = false, studySyncTimer = null, studyDirty = false;
+    function mergeStudy(a, b) {
+      const out = { goal: a.goal, goalAt: a.goalAt || 0, days: { ...a.days }, subj: { ...a.subj }, chap: { ...a.chap } };
+      if ((b.goalAt || 0) > out.goalAt) { out.goal = b.goal; out.goalAt = b.goalAt; }
+      for (const [k, v] of Object.entries(b.days || {})) {
+        const x = out.days[k];
+        out.days[k] = x ? { n: Math.max(x.n, v.n), met: !!(x.met || v.met) } : v;
+      }
+      for (const key of ['subj', 'chap']) {
+        for (const [k, v] of Object.entries(b[key] || {})) {
+          const x = out[key][k];
+          if (!x || v.t > x.t) out[key][k] = v;
+        }
+      }
+      return out;
+    }
+    function scheduleStudySync() {
+      studyDirty = true;
+      if (!studySyncReady) return;
+      clearTimeout(studySyncTimer);
+      studySyncTimer = setTimeout(pushStudy, 3000);
+    }
+    async function pushStudy() {
+      clearTimeout(studySyncTimer);
+      if (!studySyncReady || !currentUser || !studyDirty) return;
+      studyDirty = false;
+      const { error } = await supabaseClient.from('study_logs')
+        .upsert({ user_id: currentUser.id, data: study, updated_at: new Date().toISOString() });
+      if (error) studyDirty = true; // 沒網路或暫時失敗，下次再傳
+    }
+    async function pullStudy() {
+      if (!currentUser) return;
+      const { data, error } = await supabaseClient.from('study_logs').select('data').eq('user_id', currentUser.id).maybeSingle();
+      if (error) return; // 資料表不存在或沒網路：維持只存在本機
+      const cloud = data && data.data;
+      // 這台裝置的紀錄屬於別的帳號（例如訪客登入既有帳號）時，不併入，跟錯題本的規則一致
+      const local = study.uid && study.uid !== currentUser.id ? loadStudy.blank() : study;
+      study = cloud ? mergeStudy(local, cloud) : local;
+      study.uid = currentUser.id;
+      try { localStorage.setItem(STUDY_KEY, JSON.stringify(study)); } catch (e) {}
+      renderStudy(false);
+      studySyncReady = true;
+      studyDirty = !cloud || JSON.stringify(cloud) !== JSON.stringify(study);
+      if (studyDirty) pushStudy();
+    }
+    loadStudy.blank = () => ({ goal: 20, days: {}, subj: {}, chap: {} });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') pushStudy(); });
+    window.addEventListener('online', () => pushStudy());
     const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
     // rows: [[科目, 是否答對, 題目 id], ...]
@@ -1396,6 +1454,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
     function setDailyGoal(v) {
       study.goal = Number(v) || 20;
+      study.goalAt = Date.now();
       const day = study.days[dayKey()];
       if (day && day.n >= study.goal) day.met = true; // 調高目標不會收回今天已達標的紀錄
       saveStudy();
