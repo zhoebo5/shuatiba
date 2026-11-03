@@ -299,11 +299,29 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         </button>
       </div>
 
+      <!-- (A2) 統測歷屆模擬考：仿試題本封面的考前說明 -->
+      <div id="past-intro" class="hidden bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-lg space-y-5">
+        <p class="text-xs text-rose-400 text-center font-bold">注意：考試開始鈴（鐘）響前，不可以翻閱試題本</p>
+        <div class="text-center">
+          <p id="past-intro-year" class="text-sm text-slate-300"></p>
+          <h2 id="past-intro-title" class="text-xl font-bold text-ink mt-1"></h2>
+          <p id="past-intro-subjects" class="text-sm text-slate-400 mt-1"></p>
+        </div>
+        <div class="bg-slate-900 rounded-xl border border-slate-700 p-4 text-sm text-slate-300 leading-relaxed">
+          <p class="font-bold text-amber-400 mb-2">【注意事項】</p>
+          <ol id="past-intro-rules" class="list-decimal pl-5 space-y-1"></ol>
+        </div>
+        <div class="flex flex-wrap justify-center gap-3">
+          <button onclick="beginPastExam()" id="btn-past-begin" class="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl shadow-lg text-base transition">開始作答</button>
+          <button onclick="switchTab('past')" class="px-5 py-3 bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium rounded-xl text-sm transition">返回</button>
+        </div>
+      </div>
+
       <!-- (B) 考試進行中畫面 -->
       <div id="exam-active" class="hidden space-y-4">
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-wrap justify-between items-center gap-3 sticky z-10 shadow-md" style="top:var(--nav-h)">
           <div class="flex items-center gap-3">
-            <span class="px-3 py-1 bg-amber-950 text-amber-400 border border-amber-700 rounded-lg text-xs font-bold">模擬考進行中</span>
+            <span id="exam-badge" class="px-3 py-1 bg-amber-950 text-amber-400 border border-amber-700 rounded-lg text-xs font-bold">模擬考進行中</span>
             <span id="exam-progress-text" class="text-sm text-slate-300 font-mono">已作答 0 / 25 題</span>
           </div>
           <div class="flex items-center gap-4">
@@ -319,7 +337,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
           <div class="flex justify-between items-center mb-4">
             <span class="flex flex-wrap items-center gap-1.5"><span id="exam-q-subject" class="px-3 py-1 bg-slate-700 text-cyan-300 rounded-full text-xs font-semibold">科目</span><span id="exam-q-source" class="flex flex-wrap items-center gap-1.5"></span></span>
-            <span id="exam-q-num" class="text-xs text-slate-400 font-mono">第 1 / 25 題</span>
+            <span class="flex items-center gap-2">
+              <button type="button" onclick="toggleExamFlag()" id="btn-exam-flag" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-600 text-slate-300 hover:border-amber-500 transition">☆ 標記</button>
+              <span id="exam-q-num" class="text-xs text-slate-400 font-mono">第 1 / 25 題</span>
+            </span>
           </div>
           <div id="exam-q-text-container" class="mb-6">
             <h2 id="exam-q-text" class="text-lg font-medium leading-relaxed text-ink">題目內容</h2>
@@ -333,7 +354,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         </div>
 
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-          <div class="text-xs text-slate-400 mb-2">題號導覽（點擊可快速跳題檢查）：</div>
+          <div class="text-xs text-slate-400 mb-2">題號導覽（點擊可快速跳題檢查；<span class="text-amber-400">橘色</span>是標記過的題目）：</div>
           <div id="exam-nav-grid" class="flex flex-wrap gap-2"></div>
         </div>
       </div>
@@ -344,8 +365,9 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
           <p class="text-sm text-slate-400 mb-1">測驗結束・本次模擬考總分</p>
           <div id="exam-score-number" class="text-5xl font-extrabold text-amber-400 font-mono my-2">100 分</div>
           <p id="exam-score-summary" class="text-sm text-slate-300 mb-5">答對 25 題 / 共 25 題（答錯與未作答題目已自動收錄至錯題本）</p>
+          <div id="exam-rank" class="hidden max-w-md mx-auto mb-5 bg-slate-900 border border-slate-700 rounded-xl p-4 text-left text-sm text-slate-300 leading-relaxed"></div>
           <div class="flex justify-center gap-3">
-            <button onclick="resetExamLobby()" class="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg text-sm transition">再考一次</button>
+            <button onclick="examAgain()" id="btn-exam-again" class="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg text-sm transition">再考一次</button>
             <button onclick="switchTab('mistakes')" class="px-5 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium rounded-lg text-sm transition">前往錯題本複習</button>
           </div>
         </div>
@@ -878,6 +900,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     let currentUser = null;
     let allQuestions = [];
     let pastQuestions = [];
+    let pastPapers = [];
+    let pastExam = null;          // 正在進行的歷屆模擬考（past_papers 的一列）
+    let examFlags = new Set();    // 模擬考中標記「等等再檢查」的題目索引
+    let examStartedAt = 0;
     let questionById = new Map();
     let questions = [];
     let currentQIndex = 0;
@@ -1048,6 +1074,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       allQuestions = data.filter(q => q.year == null);
       pastQuestions = data.filter(q => q.year != null);
       questionById = new Map(data.map(q => [q.id, q]));
+      if (pastQuestions.length) {
+        const { data: pp } = await supabaseClient.from('past_papers').select('*');
+        pastPapers = pp || [];
+      }
       if (!document.getElementById('tab-past').classList.contains('hidden')) renderPastList();
       if (allQuestions.length > 0) {
         filterBySubject();
@@ -1068,9 +1098,24 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
     const chapterOf = q => (window.CHAPTER_OF || {})[q.id] || '';
     // 題目附圖（電路圖等）放在網站 repo 的 img/ 底下；白底讓深色模式也看得清楚
+    // 點圖會開新分頁看原尺寸，手機可以兩指放大
+    // 一題可以有多張圖，用 | 分隔（例如主圖＋四個選項的波形圖）
     const questionImage = q => q.image_url
-      ? `<img src="${esc(q.image_url)}" alt="第 ${esc(q.number ?? '')} 題附圖" loading="lazy" class="mt-3 max-w-full h-auto rounded-lg bg-white p-2 border border-slate-700">`
+      ? q.image_url.split('|').map(src => `<a href="${esc(src)}" target="_blank" rel="noopener" class="block mt-3"><img src="${esc(src)}" alt="第 ${esc(q.number ?? '')} 題附圖" loading="lazy" class="max-w-full h-auto rounded-lg bg-white p-2 border border-slate-700"></a>`).join('')
+        + '<p class="text-xs text-slate-400 mt-1">點圖可以開大圖</p>'
       : '';
+    // 歷屆題的題目用 ``` 包住程式碼與表格，其餘是一般段落（自編題沿用 formatQuestionText）
+    function formatRich(text) {
+      return String(text || '').split('```').map((part, i) => {
+        if (i % 2 === 1) return `<pre class="bg-slate-950 p-3 my-3 rounded-xl border border-slate-700 font-mono text-xs sm:text-sm text-cyan-300 overflow-x-auto leading-relaxed">${esc(part.replace(/^\n+|\n+$/g, ''))}</pre>`;
+        const t = part.trim();
+        return t ? `<p class="text-lg font-medium leading-relaxed text-ink my-2">${esc(t).replace(/\n/g, '<br>')}</p>` : '';
+      }).join('');
+    }
+    function questionHTML(q, num, noImage) {
+      if (q.year == null) return formatQuestionText(`${num}. ${q.question_text}`);
+      return formatRich(`${num}. ${q.question_text}`) + (noImage ? '' : questionImage(q));
+    }
 
     // ==================== 統測歷屆 ====================
     const PAPER_ORDER = ['專業科目(一)', '專業科目(二)'];
@@ -1087,7 +1132,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       const papers = new Map();
       pastQuestions.forEach(q => {
         const k = `${q.year}|${q.paper}`;
-        if (!papers.has(k)) papers.set(k, { year: q.year, paper: q.paper, track: q.track, subjects: new Set(), n: 0 });
+        if (!papers.has(k)) {
+          const meta = pastPapers.find(m => m.year === q.year && m.paper === q.paper && m.track === q.track);
+          papers.set(k, { year: q.year, paper: q.paper, track: q.track, meta, subjects: new Set(), n: 0 });
+        }
         const p = papers.get(k);
         p.n++;
         p.subjects.add(q.subject);
@@ -1100,16 +1148,34 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
             ${[...papers.values()].filter(p => p.year === y)
               .sort((a, b) => PAPER_ORDER.indexOf(a.paper) - PAPER_ORDER.indexOf(b.paper))
               .map(p => `
-              <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center justify-between gap-3">
-                <div class="min-w-0">
+              <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3">
+                <div>
                   <p class="font-bold text-ink">${esc(p.paper)}</p>
                   <p class="text-xs text-slate-400 mt-0.5">${esc([...p.subjects].join('、'))}・共 ${p.n} 題</p>
-                  <p class="text-xs text-slate-500 mt-0.5">${esc(p.track || '')}</p>
+                  <p class="text-xs text-slate-500 mt-0.5">${esc(p.track || '')}${p.meta ? `・全國平均 ${Number(p.meta.mean).toFixed(1)} 分` : ''}</p>
+                  ${p.meta ? `<p class="text-xs text-amber-400 mt-1" data-attempt="${p.meta.id}"></p>` : ''}
                 </div>
-                <button onclick="startPast(${p.year}, '${esc(p.paper)}')" class="shrink-0 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-bold transition">開始作答</button>
+                <div class="flex gap-2">
+                  ${p.meta ? `<button onclick="openPastIntro(${p.meta.id})" class="flex-1 px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-bold transition">模擬考 ${p.meta.duration_min} 分鐘</button>` : ''}
+                  <button onclick="startPast(${p.year}, '${esc(p.paper)}')" class="flex-1 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm font-bold transition">練習（看詳解）</button>
+                </div>
               </div>`).join('')}
           </div>
         </div>`).join('');
+      showPastAttempts();
+    }
+
+    // 在每份試卷卡片上顯示自己最近一次與最高分（只讀得到自己的紀錄）
+    async function showPastAttempts() {
+      if (!currentUser || !pastPapers.length) return;
+      const { data } = await supabaseClient.from('past_attempts').select('paper_id, score, created_at').order('created_at', { ascending: false }).limit(300);
+      if (!data || !data.length) return;
+      document.querySelectorAll('[data-attempt]').forEach(el => {
+        const rows = data.filter(r => r.paper_id === Number(el.dataset.attempt));
+        if (!rows.length) return;
+        const best = Math.max(...rows.map(r => Number(r.score)));
+        el.textContent = `上次 ${Number(rows[0].score)} 分・最高 ${best} 分・考過 ${rows.length} 次`;
+      });
     }
 
     function startPast(year, paper) {
@@ -1182,7 +1248,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('q-subject').innerText = (currentMode === 'mistake') ? `[錯題重練] ${subjLabel}` : subjLabel;
       document.getElementById('q-source').innerHTML = sourceBadge(q);
       document.getElementById('btn-report-q').classList.remove('hidden');
-      document.getElementById('q-text-container').innerHTML = formatQuestionText(`${currentMode === 'past' ? q.number : idx + 1}. ${q.question_text}`) + questionImage(q);
+      document.getElementById('q-text-container').innerHTML = questionHTML(q, currentMode === 'past' ? q.number : idx + 1);
       document.getElementById('q-explanation-box').classList.add('hidden');
 
       const optionsBox = document.getElementById('q-options');
@@ -1238,7 +1304,9 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
           tag.textContent = label;
           b.appendChild(tag);
         };
-        if (i === correctOption) mark('opt-correct', (i === selectedIndex) ? '✓ 你答對了' : '✓ 正確答案');
+        // 官方公告多個答案都給分時，選到其他正解也標成答對
+        if (i === selectedIndex && isCorrect) mark('opt-correct', '✓ 你答對了');
+        else if (i === correctOption) mark('opt-correct', isCorrect ? '✓ 也是正解' : '✓ 正確答案');
         else if (i === selectedIndex && !isCorrect) mark('opt-wrong', '✕ 你的答案');
         else b.className = 'opt opt-dim font-mono text-sm';
       }
@@ -1515,9 +1583,103 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     function resetExamLobby() {
       clearInterval(examTimerInterval);
       isExamRunning = false;
+      pastExam = null;
       document.getElementById('exam-lobby').classList.remove('hidden');
+      document.getElementById('past-intro').classList.add('hidden');
       document.getElementById('exam-active').classList.add('hidden');
       document.getElementById('exam-result').classList.add('hidden');
+    }
+
+    function examAgain() {
+      if (pastExam) openPastIntro(pastExam.id);
+      else resetExamLobby();
+    }
+
+    // 共用的倒數計時；歷屆模擬考剩 10 分鐘時提醒一次
+    function startExamTimer(seconds) {
+      examSecondsLeft = seconds;
+      examEndTime = Date.now() + seconds * 1000;
+      examStartedAt = Date.now();
+      isExamRunning = true;
+      let warned = false;
+      updateExamTimerDisplay();
+      clearInterval(examTimerInterval);
+      examTimerInterval = setInterval(() => {
+        examSecondsLeft = Math.max(0, Math.round((examEndTime - Date.now()) / 1000));
+        updateExamTimerDisplay();
+        if (pastExam && !warned && examSecondsLeft <= 600 && examSecondsLeft > 0) {
+          warned = true;
+          showError('剩下 10 分鐘，記得回頭檢查標記和還沒作答的題目', null, true);
+        }
+        if (examSecondsLeft <= 0) {
+          clearInterval(examTimerInterval);
+          submitExam();
+          alert('考試時間到！系統已自動送交伺服器批改。');
+        }
+      }, 1000);
+    }
+
+    // ==================== 統測歷屆模擬考 ====================
+    function openPastIntro(paperId) {
+      const p = pastPapers.find(x => x.id === paperId);
+      if (!p) return;
+      const qs = pastQuestions.filter(q => q.year === p.year && q.paper === p.paper && q.track === p.track);
+      pastExam = p;
+      TAB_IDS.forEach(t => document.getElementById(`tab-${t}`).classList.add('hidden'));
+      document.getElementById('tab-exam').classList.remove('hidden');
+      setNavActive('past');
+      ['exam-lobby', 'exam-active', 'exam-result'].forEach(id => document.getElementById(id).classList.add('hidden'));
+      document.getElementById('past-intro').classList.remove('hidden');
+      document.getElementById('past-intro-year').textContent = `${p.year} 學年度四技二專統一入學測驗`;
+      document.getElementById('past-intro-title').textContent = `${p.track}　${p.paper}`;
+      document.getElementById('past-intro-subjects').textContent = p.subjects || '';
+      const pts = Number(p.points_per_q);
+      document.getElementById('past-intro-rules').innerHTML = [
+        `本試卷共 ${qs.length} 題，每題 ${pts} 分，共 ${qs.length * pts} 分，答對給分，答錯不倒扣。`,
+        '均為單一選擇題，請選一個最適當答案；有關數值計算的題目，以最接近的答案為準。',
+        `考試時間 ${p.duration_min} 分鐘，開始後不能暫停；剩 10 分鐘會提醒，時間到自動交卷。`,
+        '作答中不會顯示對錯，可以隨時改答案，也可以按「☆ 標記」記下想再檢查的題目。',
+        '請準備紙筆當草稿紙，手機開勿擾，像真的考試一樣。',
+        `交卷後依官方公布的 ${p.year} 年成績組距，換算你在 ${Number(p.attendees).toLocaleString()} 位到考生中的位置。`
+      ].map(t => `<li>${esc(t)}</li>`).join('');
+      document.getElementById('btn-past-begin').textContent = `開始作答（${p.duration_min} 分鐘）`;
+      window.scrollTo({ top: 0 });
+    }
+
+    function beginPastExam() {
+      const p = pastExam;
+      if (!p) return;
+      examQuestions = pastQuestions.filter(q => q.year === p.year && q.paper === p.paper && q.track === p.track).sort((a, b) => a.number - b.number);
+      if (!examQuestions.length) return;
+      examUserAnswers = new Array(examQuestions.length).fill(null);
+      examFlags = new Set();
+      currentExamIndex = 0;
+      document.getElementById('exam-badge').textContent = `${p.year} 統測・${p.paper}`;
+      document.getElementById('past-intro').classList.add('hidden');
+      document.getElementById('exam-active').classList.remove('hidden');
+      renderExamQuestion();
+      renderExamNavGrid();
+      startExamTimer(p.duration_min * 60);
+      window.scrollTo({ top: 0 });
+    }
+
+    function toggleExamFlag() {
+      if (examFlags.has(currentExamIndex)) examFlags.delete(currentExamIndex);
+      else examFlags.add(currentExamIndex);
+      renderExamQuestion();
+      renderExamNavGrid();
+    }
+
+    // 依官方成績組距（各分數以上的累積人數）換算全國位置
+    function pastRankHTML(p, score) {
+      const cum = p.grade_cum && p.grade_cum[String(score)];
+      if (!cum || !p.attendees) return '';
+      const pct = cum / p.attendees * 100;
+      const pctText = pct < 1 ? pct.toFixed(1) : Math.round(pct);
+      const level = score >= p.top_std ? '達到前標' : score >= p.mean ? '高於全國平均' : score >= p.bottom_std ? '達到後標' : '還沒到後標';
+      return `<p class="font-bold text-ink mb-1">${score} 分大約是全國前 <span class="text-amber-400">${pctText}%</span>（${esc(level)}）</p>
+        <p>${p.year} 年 ${esc(p.track)} ${esc(p.paper)} 到考 ${Number(p.attendees).toLocaleString()} 人，考 ${score} 分以上的有 ${Number(cum).toLocaleString()} 人。</p>
+        <p class="text-xs text-slate-400 mt-2">全國平均 ${Number(p.mean).toFixed(1)}・前標 ${Number(p.top_std)}・後標 ${Number(p.bottom_std)}（資料來源：技專校院入學測驗中心成績組距）</p>`;
     }
 
     function startExam() {
@@ -1535,10 +1697,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       }
       examQuestions = pool.slice(0, 25);
       examUserAnswers = new Array(examQuestions.length).fill(null);
+      examFlags = new Set();
       currentExamIndex = 0;
-      examSecondsLeft = 50 * 60;
-      examEndTime = Date.now() + examSecondsLeft * 1000;
-      isExamRunning = true;
+      pastExam = null;
+      document.getElementById('exam-badge').textContent = '模擬考進行中';
 
       document.getElementById('exam-lobby').classList.add('hidden');
       document.getElementById('exam-result').classList.add('hidden');
@@ -1546,18 +1708,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
       renderExamQuestion();
       renderExamNavGrid();
-      updateExamTimerDisplay();
-
-      clearInterval(examTimerInterval);
-      examTimerInterval = setInterval(() => {
-        examSecondsLeft = Math.max(0, Math.round((examEndTime - Date.now()) / 1000));
-        updateExamTimerDisplay();
-        if (examSecondsLeft <= 0) {
-          clearInterval(examTimerInterval);
-          submitExam();
-          alert('考試時間到！系統已自動送交伺服器批改。');
-        }
-      }, 1000);
+      startExamTimer(50 * 60);
     }
 
     function updateExamTimerDisplay() {
@@ -1566,7 +1717,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       const timerEl = document.getElementById('exam-timer');
       timerEl.innerText = `${mins}:${secs}`;
       
-      if (examSecondsLeft <= 300) {
+      if (examSecondsLeft <= (pastExam ? 600 : 300)) {
         timerEl.className = 'bg-rose-950 px-3.5 py-1.5 rounded-lg border border-rose-600 font-mono text-lg font-bold text-rose-400 animate-pulse';
       } else {
         timerEl.className = 'bg-slate-900 px-3.5 py-1.5 rounded-lg border border-slate-700 font-mono text-lg font-bold text-cyan-400';
@@ -1578,11 +1729,18 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       const total = examQuestions.length;
       const answeredCount = examUserAnswers.filter(a => a !== null).length;
 
-      document.getElementById('exam-progress-text').innerText = `已作答 ${answeredCount} / ${total} 題`;
+      document.getElementById('exam-progress-text').innerText = `已作答 ${answeredCount} / ${total} 題` + (examFlags.size ? `・標記 ${examFlags.size} 題` : '');
       document.getElementById('exam-q-subject').innerText = q.subject;
-      document.getElementById('exam-q-source').innerHTML = sourceBadge(q);
+      // 正式模擬時不顯示「已查核」等標籤，跟真的試卷一樣只看題目
+      document.getElementById('exam-q-source').innerHTML = pastExam ? '' : sourceBadge(q);
       document.getElementById('exam-q-num').innerText = `第 ${currentExamIndex + 1} / ${total} 題`;
-      document.getElementById('exam-q-text-container').innerHTML = formatQuestionText(`${currentExamIndex + 1}. ${q.question_text}`);
+      document.getElementById('exam-q-text-container').innerHTML = questionHTML(q, currentExamIndex + 1);
+      const flagged = examFlags.has(currentExamIndex);
+      const flagBtn = document.getElementById('btn-exam-flag');
+      flagBtn.textContent = flagged ? '★ 已標記' : '☆ 標記';
+      flagBtn.className = flagged
+        ? 'px-2.5 py-1 rounded-lg text-xs font-bold border border-amber-500 bg-amber-950 text-amber-400 transition'
+        : 'px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-600 text-slate-300 hover:border-amber-500 transition';
 
       const optionsBox = document.getElementById('exam-q-options');
       optionsBox.innerHTML = '';
@@ -1637,6 +1795,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         let cls = 'w-9 h-9 rounded-lg text-xs font-mono font-bold transition ';
         if (isCurrent) {
           cls += 'ring-2 ring-amber-400 bg-cyan-700 text-white';
+        } else if (examFlags.has(idx)) {
+          cls += 'bg-amber-950 text-amber-400 border border-amber-500 hover:bg-amber-900';
         } else if (isAnswered) {
           cls += 'bg-cyan-950 text-cyan-300 border border-cyan-700 hover:bg-cyan-800 hover:text-white';
         } else {
@@ -1651,7 +1811,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
     function confirmSubmitExam() {
       const unanswered = examUserAnswers.filter(a => a === null).length;
-      const msg = unanswered > 0 ? `還有 ${unanswered} 題未作答，確定交卷嗎？` : '確定交卷並查看成績嗎？';
+      const notes = [unanswered ? `${unanswered} 題未作答` : '', examFlags.size ? `${examFlags.size} 題有標記` : ''].filter(Boolean);
+      const msg = notes.length ? `還有 ${notes.join('、')}，確定交卷嗎？` : '確定交卷並查看成績嗎？';
       if (confirm(msg)) submitExam();
     }
 
@@ -1669,9 +1830,13 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         selected_option: examUserAnswers[idx]
       }));
 
-      const { data: examRes, error } = await supabaseClient.rpc('submit_exam_answers', {
-        p_answers: payload
-      });
+      const { data: examRes, error } = pastExam
+        ? await supabaseClient.rpc('submit_past_exam', {
+            p_paper_id: pastExam.id,
+            p_answers: payload,
+            p_seconds: Math.round((Date.now() - examStartedAt) / 1000)
+          })
+        : await supabaseClient.rpc('submit_exam_answers', { p_answers: payload });
 
       submitBtnTop.disabled = false;
       submitBtnTop.innerText = '提前交卷';
@@ -1698,7 +1863,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
         const parsedOptions = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
         const userAnsText = (userAns !== null) ? parsedOptions[userAns] : '未作答';
-        const correctAnsText = parsedOptions[r.correct_option] || '';
+        const alsoOk = (r.accepted_options || []).map(i => parsedOptions[i]).filter(Boolean);
+        const correctAnsText = (parsedOptions[r.correct_option] || '') + (alsoOk.length ? `（${alsoOk.join('、')} 也給分）` : '');
 
         reviewHtml += `
           <div class="review-card ${isCorrect ? 'is-correct' : 'is-wrong'} p-4 rounded-xl bg-slate-900 border border-slate-700 space-y-2">
@@ -1706,7 +1872,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
               <span class="text-xs px-2 py-0.5 bg-slate-800 text-cyan-300 rounded">${esc(q.subject)}${chapterOf(q) ? '・' + esc(chapterOf(q)) : ''}</span>
               <span class="flex items-center gap-2"><span class="${isCorrect ? 'pill-ok' : 'pill-bad'}">${isCorrect ? '✓ 答對' : '✕ 答錯・已加入錯題本'}</span><button type="button" onclick="openReportModal('exam', ${idx})" class="report-btn">⚑ 回報有誤</button></span>
             </div>
-            <div class="font-medium text-ink text-sm">${formatQuestionText(`${idx + 1}. ${q.question_text}`)}</div>
+            <div class="font-medium text-ink text-sm">${questionHTML(q, idx + 1)}</div>
             <div class="text-xs space-y-1 pt-1 font-mono">
               <div class="${isCorrect ? 'text-emerald-400' : 'text-rose-400'}">你的答案：${esc(userAnsText)}</div>
               ${!isCorrect ? `<div class="text-emerald-400 font-bold">正確答案：${esc(correctAnsText)}</div>` : ''}
@@ -1722,9 +1888,22 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       recordAnswers(examQuestions
         .map((q, idx) => [q.subject, !!(resultMap.get(q.id) || {}).is_correct, q.id, examUserAnswers[idx]])
         .filter(r => r[3] != null));
-      const finalScore = Math.round((correctCount / total) * 100);
+      const finalScore = pastExam ? Number(examRes.score) : Math.round((correctCount / total) * 100);
       document.getElementById('exam-score-number').innerText = `${finalScore} 分`;
-      document.getElementById('exam-score-summary').innerText = `答對 ${correctCount} 題 / 共 ${total} 題（實際作答 ${answeredCount} 題已計入戰績，錯題已收錄至錯題本）`;
+      const rankBox = document.getElementById('exam-rank');
+      if (pastExam) {
+        const used = Math.round((Date.now() - examStartedAt) / 1000);
+        document.getElementById('exam-score-summary').innerText = `答對 ${correctCount} 題 / 共 ${total} 題・用時 ${Math.floor(used / 60)} 分 ${used % 60} 秒（錯題已收錄至錯題本）`;
+        const rank = pastRankHTML(pastExam, finalScore);
+        rankBox.innerHTML = rank;
+        rankBox.classList.toggle('hidden', !rank);
+        document.getElementById('btn-exam-again').textContent = '再考一次這份';
+      } else {
+        document.getElementById('exam-score-summary').innerText = `答對 ${correctCount} 題 / 共 ${total} 題（實際作答 ${answeredCount} 題已計入戰績，錯題已收錄至錯題本）`;
+        rankBox.classList.add('hidden');
+        document.getElementById('btn-exam-again').textContent = '再考一次';
+      }
+      window.scrollTo({ top: 0 });
 
       document.getElementById('exam-active').classList.add('hidden');
       document.getElementById('exam-result').classList.remove('hidden');
@@ -1797,7 +1976,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
                 ? '<span class="ml-1 text-xs px-2.5 py-0.5 bg-rose-600 text-white rounded">今天複習</span>'
                 : `<span class="ml-1 text-xs px-2.5 py-0.5 bg-slate-700 text-slate-300 rounded">${dueText(q.due_at)}複習</span>`}
               ${srs ? `<span class="ml-1 text-xs text-slate-400">進度 ${q.streak || 0}/3</span>` : ''}
-              <div class="mt-2">${formatQuestionText(`${idx + 1}. ${q.question_text}`)}</div>
+              <div class="mt-2">${questionHTML(q, idx + 1, true)}</div>
             </div>
             <button onclick="startMistakeTraining(${idx})" class="shrink-0 px-3 py-1.5 bg-slate-700 hover:bg-cyan-600 hover:text-white rounded-lg text-xs font-bold transition">重練</button>
           </div>
@@ -1941,7 +2120,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     applyPalette();
 
     function switchTab(tab) {
-      if (isExamRunning && tab !== 'exam') {
+      // 考試中點任何分頁（包括「模擬考」本身）都會中斷作答，一律先確認
+      if (isExamRunning) {
         if (!confirm('模擬考正在進行中，確定要離開嗎？')) return;
         clearInterval(examTimerInterval);
         isExamRunning = false;
