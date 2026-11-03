@@ -130,11 +130,11 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       <div class="flex items-center gap-3 ml-auto">
         <div class="tab-bar" id="tab-bar">
         <button onclick="switchTab('quiz')" id="nav-quiz" class="tab-btn" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg><span class="hidden md:inline">刷題區</span><span class="md:hidden">刷題</span></button>
+        <button onclick="switchTab('past')" id="nav-past" class="tab-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg><span class="hidden md:inline">統測歷屆</span><span class="md:hidden">歷屆</span></button>
         <button onclick="switchTab('exam')" id="nav-exam" class="tab-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="hidden md:inline">模擬考</span><span class="md:hidden">模擬考</span></button>
         <button onclick="switchTab('flashcards')" id="nav-flashcards" class="tab-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg><span class="hidden md:inline">必背公式卡</span><span class="md:hidden">公式卡</span></button>
         <button onclick="switchTab('mistakes')" id="nav-mistakes" class="tab-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><span class="hidden md:inline">錯題本</span><span class="md:hidden">錯題本</span></button>
         <button onclick="switchTab('leaderboard')" id="nav-leaderboard" class="tab-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><span class="hidden md:inline">排行榜</span><span class="md:hidden">排行榜</span></button>
-        <button onclick="switchTab('admin')" id="nav-admin" class="tab-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span class="hidden md:inline">後台管理</span><span class="md:hidden">後台</span></button>
         </div>
         <button id="palette-btn" type="button" onclick="togglePalettePop()" class="icon-btn" aria-label="切換配色" aria-expanded="false" title="切換配色">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.7l5.7 5.6a8 8 0 11-11.4 0z"/></svg>
@@ -212,7 +212,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       </div>
 
       <div class="flex flex-wrap justify-between items-center bg-slate-800 p-3.5 rounded-xl border border-slate-700 gap-2">
-        <div class="flex items-center gap-2">
+        <button id="past-back" onclick="switchTab('past')" class="hidden text-sm px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 font-medium transition">← 回歷屆列表</button>
+        <div id="subject-wrap" class="flex items-center gap-2">
           <label class="text-sm text-slate-300 font-medium">特訓科目：</label>
           <select id="subject-filter" onchange="filterBySubject()" class="bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:border-cyan-500">
             <option value="ALL">全部科目隨機混刷</option>
@@ -420,6 +421,15 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       </div>
     </section>
 
+    <!-- ==================== 統測歷屆試題區 ==================== -->
+    <section id="tab-past" class="hidden space-y-4">
+      <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+        <h2 class="text-lg font-bold text-cyan-300">統測歷屆試題</h2>
+        <p class="text-xs text-slate-400 mt-1">題目取自技專校院入學測驗中心公告的歷屆試題，答案依官方公布；詳解由本站自行撰寫，若有錯誤歡迎用「回報」告訴我們。</p>
+      </div>
+      <div id="past-list" class="space-y-4"></div>
+    </section>
+
     <!-- ==================== 4. 錯題複習區 ==================== -->
     <section id="tab-mistakes" class="hidden space-y-4">
       <div id="mistake-list" class="space-y-4"></div>
@@ -452,266 +462,6 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
           <tbody id="leaderboard-body" class="divide-y divide-slate-700/60 text-sm"></tbody>
         </table>
       </div>
-    </section>
-
-    <!-- ==================== 6. 後台管理區 (題庫 ＋ 公式卡 ＋ CSV 匯出/匯入) ==================== -->
-    <section id="tab-admin" class="hidden space-y-4">
-      
-      <!-- (A) 管理員帳號驗證畫面 -->
-      <div id="admin-lock-screen" class="bg-slate-800 p-8 rounded-2xl border border-slate-700 text-center max-w-md mx-auto shadow-lg">
-        <h2 class="text-lg font-bold text-cyan-400 mb-2">管理員權限驗證</h2>
-        <p class="text-xs text-slate-400 mb-4">請使用管理員帳號登入以管理雲端題庫與公式卡</p>
-        <div class="space-y-2">
-          <input type="email" id="admin-email-input" placeholder="管理員 Email" autocomplete="username" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-ink text-sm focus:outline-none focus:border-cyan-500">
-          <input type="password" id="admin-pin-input" placeholder="管理員密碼" autocomplete="current-password" onkeydown="if(event.key==='Enter')unlockAdminPanel()" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-ink text-sm focus:outline-none focus:border-cyan-500">
-          <button onclick="unlockAdminPanel()" class="w-full px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg text-sm transition">登入後台</button>
-        </div>
-      </div>
-
-      <!-- (B) 解鎖後的管理主畫面 -->
-      <div id="admin-panel-content" class="hidden space-y-6">
-        
-        <!-- 切換「管理測驗題庫」與「管理必背公式卡」的子導覽列 -->
-        <div class="flex gap-3 bg-slate-800 p-2 rounded-xl border border-slate-700">
-          <button onclick="switchAdminSubTab('questions')" id="btn-admin-sub-q" class="flex-1 py-2.5 rounded-lg bg-cyan-600 text-white font-bold text-sm transition">
-            管理測驗題庫
-          </button>
-          <button onclick="switchAdminSubTab('flashcards')" id="btn-admin-sub-fc" class="flex-1 py-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium text-sm transition">
-            管理必背公式卡
-          </button>
-        </div>
-
-        <!-- ==================== 子區塊 1：測驗題庫管理 ==================== -->
-        <div id="admin-section-questions" class="space-y-6">
-          
-          <!-- CSV 批次匯入專用面板 -->
-          <div class="bg-slate-800 p-6 rounded-xl border border-cyan-800/60 shadow-lg space-y-3">
-            <h3 class="text-base font-bold text-cyan-400">Google 試算表 CSV 批次匯入題庫</h3>
-            <p class="text-xs text-slate-300 leading-relaxed">
-              請準備包含以下欄位的 CSV 檔案（第一列為標題列，欄位依序為：<code class="text-cyan-300">subject, question_text, option_a, option_b, option_c, option_d, correct_option(0~3), explanation</code>），上傳後系統將自動解析並批量寫入雲端題庫！
-            </p>
-            <div class="flex flex-wrap items-center gap-3 pt-1">
-              <input type="file" id="csv-file-input" accept=".csv" class="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-cyan-700 file:text-white hover:file:bg-cyan-600 cursor-pointer">
-              <button onclick="importQuestionsCSV()" class="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg text-xs transition">開始解析並批次匯入</button>
-            </div>
-            <div id="csv-import-status" class="hidden text-xs font-bold p-2.5 rounded-lg"></div>
-          </div>
-
-          <!-- 單題新增與編輯表單 -->
-          <div id="admin-form-card" class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg transition">
-            <div class="flex flex-wrap justify-between items-center border-b border-slate-700 pb-3 mb-4 gap-2">
-              <div>
-                <h2 id="admin-form-title" class="text-lg font-bold text-cyan-400">線上快速新增題目</h2>
-                <p id="admin-form-subtitle" class="text-xs text-slate-400">填寫完畢後點擊送出，題目將直接寫入雲端資料庫並立即生效</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <span id="admin-total-count" class="text-xs px-3 py-1 bg-slate-900 text-slate-300 rounded-full border border-slate-700 font-mono">目前總題數：0</span>
-                <button onclick="exportQuestionsCSV()" class="text-xs px-3 py-1 bg-slate-700 hover:bg-slate-600 text-cyan-300 rounded-full border border-slate-600 font-bold transition">匯出題庫 CSV</button>
-              </div>
-            </div>
-
-            <div class="space-y-4 text-sm">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-slate-300 mb-1 font-medium">所屬科目：</label>
-                  <select id="new-q-subject" class="w-full bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg p-2.5 text-sm font-medium focus:outline-none focus:border-cyan-500">
-                    <option value="國文">國文 (共同科目)</option>
-                    <option value="英文">英文 (共同科目)</option>
-                    <option value="數學">數學 (共同科目)</option>
-                    <option value="基本電學">基本電學 (專一)</option>
-                    <option value="電子學">電子學 (專一)</option>
-                    <option value="數位邏輯設計">數位邏輯設計 (專二)</option>
-                    <option value="程式設計實習">程式設計實習 (專二)</option>
-                    <option value="微處理機">微處理機 (專二)</option>
-                    <option value="電腦硬體裝修乙級">電腦硬體裝修乙級</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-slate-300 mb-1 font-medium">正確答案選項：</label>
-                  <select id="new-q-correct" class="w-full bg-slate-900 text-emerald-400 border border-slate-600 rounded-lg p-2.5 text-sm font-bold focus:outline-none focus:border-cyan-500">
-                    <option value="0">選項 (A) 為正確答案</option>
-                    <option value="1">選項 (B) 為正確答案</option>
-                    <option value="2">選項 (C) 為正確答案</option>
-                    <option value="3">選項 (D) 為正確答案</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-slate-300 mb-1 font-medium">題目內容（題幹）：</label>
-                <textarea id="new-q-text" rows="3" placeholder="請輸入完整題目敘述（若含 C 語言程式碼可直接換行輸入）..." class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-ink font-mono text-xs focus:outline-none focus:border-cyan-500"></textarea>
-              </div>
-
-              <div>
-                <label class="block text-slate-300 mb-1 font-medium">四個選項內容（系統會自動加上 (A)~(D) 標籤）：</label>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div class="flex items-center bg-slate-900 border border-slate-600 rounded-lg overflow-hidden focus-within:border-cyan-500">
-                    <span class="px-3 py-2 bg-slate-800 text-slate-400 font-mono text-xs border-r border-slate-700">(A)</span>
-                    <input type="text" id="new-opt-0" placeholder="輸入選項 A 內容" class="w-full bg-transparent p-2 text-ink focus:outline-none">
-                  </div>
-                  <div class="flex items-center bg-slate-900 border border-slate-600 rounded-lg overflow-hidden focus-within:border-cyan-500">
-                    <span class="px-3 py-2 bg-slate-800 text-slate-400 font-mono text-xs border-r border-slate-700">(B)</span>
-                    <input type="text" id="new-opt-1" placeholder="輸入選項 B 內容" class="w-full bg-transparent p-2 text-ink focus:outline-none">
-                  </div>
-                  <div class="flex items-center bg-slate-900 border border-slate-600 rounded-lg overflow-hidden focus-within:border-cyan-500">
-                    <span class="px-3 py-2 bg-slate-800 text-slate-400 font-mono text-xs border-r border-slate-700">(C)</span>
-                    <input type="text" id="new-opt-2" placeholder="輸入選項 C 內容" class="w-full bg-transparent p-2 text-ink focus:outline-none">
-                  </div>
-                  <div class="flex items-center bg-slate-900 border border-slate-600 rounded-lg overflow-hidden focus-within:border-cyan-500">
-                    <span class="px-3 py-2 bg-slate-800 text-slate-400 font-mono text-xs border-r border-slate-700">(D)</span>
-                    <input type="text" id="new-opt-3" placeholder="輸入選項 D 內容" class="w-full bg-transparent p-2 text-ink focus:outline-none">
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-slate-300 mb-1 font-medium">題目詳解與觀念說明：</label>
-                <textarea id="new-q-exp" rows="2" placeholder="請輸入解析與公式推導步驟..." class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-ink focus:outline-none focus:border-cyan-500"></textarea>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-slate-300 mb-1 font-medium">題目來源：</label>
-                  <select id="new-q-source" class="w-full bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg p-2.5 text-sm font-medium focus:outline-none focus:border-cyan-500">
-                    <option value="自編">自編</option>
-                    <option value="歷屆統測">歷屆統測</option>
-                    <option value="學校考卷">學校考卷</option>
-                    <option value="參考書改編">參考書改編</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-slate-300 mb-1 font-medium">查核狀態：</label>
-                  <select id="new-q-verify" class="w-full bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg p-2.5 text-sm font-medium focus:outline-none focus:border-cyan-500">
-                    <option value="unverified">未查核</option>
-                    <option value="verified">已查核（答案與範圍都確認過）</option>
-                    <option value="disputed">有爭議（待確認）</option>
-                  </select>
-                </div>
-              </div>
-              <p id="admin-src-warn" class="hidden text-xs text-amber-400">尚未偵測到 source／verify_status 欄位，上面兩個選項暫時不會儲存。請先在 Supabase 執行建立欄位的 SQL，再重新整理。</p>
-
-              <div id="admin-status-msg" class="hidden p-3 rounded-lg text-xs font-bold"></div>
-
-              <div class="flex justify-end gap-3 pt-2">
-                <button onclick="cancelEditMode()" id="btn-cancel-edit" class="hidden px-4 py-2.5 bg-amber-700 hover:bg-amber-600 text-white rounded-lg text-sm font-bold transition">取消編輯</button>
-                <button onclick="clearAdminForm()" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-medium transition">清空表單</button>
-                <button onclick="submitNewQuestion()" id="btn-submit-new-q" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-bold shadow transition">上傳題目至雲端題庫</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg space-y-4">
-            <div class="flex flex-wrap justify-between items-center gap-3 border-b border-slate-700 pb-4">
-              <div>
-                <h3 class="text-base font-bold text-ink">雲端題庫完整清單</h3>
-                <p class="text-xs text-slate-400">可依科目篩選或搜尋關鍵字，點擊右側按鈕即可直接修改或刪除題目</p>
-              </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <select id="admin-filter-subject" onchange="renderAdminQuestionList()" class="bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg px-3 py-1.5 text-xs font-medium focus:outline-none focus:border-cyan-500">
-                  <option value="ALL">全部科目</option>
-                  <option value="國文">國文</option>
-                  <option value="英文">英文</option>
-                  <option value="數學">數學</option>
-                  <option value="基本電學">基本電學</option>
-                  <option value="電子學">電子學</option>
-                  <option value="數位邏輯設計">數位邏輯設計</option>
-                  <option value="程式設計實習">程式設計實習</option>
-                  <option value="微處理機">微處理機</option>
-                  <option value="電腦硬體裝修乙級">電腦硬體裝修乙級</option>
-                </select>
-                <input type="text" id="admin-search-input" oninput="renderAdminQuestionList()" placeholder="搜尋題目或詳解關鍵字..." class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-1.5 text-xs text-ink focus:outline-none focus:border-cyan-500 w-48">
-              </div>
-            </div>
-
-            <div id="admin-question-list" class="space-y-3 max-h-[600px] overflow-y-auto pr-1"></div>
-          </div>
-        </div>
-
-        <!-- ==================== 子區塊 2：必背公式卡管理 ==================== -->
-        <div id="admin-section-flashcards" class="hidden space-y-6">
-          <div id="admin-fc-form-card" class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg transition">
-            <div class="flex flex-wrap justify-between items-center border-b border-slate-700 pb-3 mb-4 gap-2">
-              <div>
-                <h2 id="admin-fc-form-title" class="text-lg font-bold text-cyan-400">新增必背公式卡</h2>
-                <p id="admin-fc-form-subtitle" class="text-xs text-slate-400">新增或修改後將同步至 Supabase 的 flashcards 資料表</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <span id="admin-fc-total-count" class="text-xs px-3 py-1 bg-slate-900 text-slate-300 rounded-full border border-slate-700 font-mono">目前總卡數：0</span>
-                <button onclick="exportFlashcardsCSV()" class="text-xs px-3 py-1 bg-slate-700 hover:bg-slate-600 text-cyan-300 rounded-full border border-slate-600 font-bold transition">匯出公式卡 CSV</button>
-              </div>
-            </div>
-
-            <div class="space-y-4 text-sm">
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label class="block text-slate-300 mb-1 font-medium">所屬科目：</label>
-                  <select id="new-fc-subject" class="w-full bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg p-2.5 text-sm font-medium focus:outline-none focus:border-cyan-500">
-                    <option value="國文">國文 (共同科目)</option>
-                    <option value="英文">英文 (共同科目)</option>
-                    <option value="數學">數學 (共同科目)</option>
-                    <option value="基本電學">基本電學 (專一)</option>
-                    <option value="電子學">電子學 (專一)</option>
-                    <option value="數位邏輯設計">數位邏輯設計 (專二)</option>
-                    <option value="程式設計實習">程式設計實習 (專二)</option>
-                    <option value="微處理機">微處理機 (專二)</option>
-                    <option value="電腦硬體裝修乙級">電腦硬體裝修乙級</option>
-                  </select>
-                </div>
-                <div class="md:col-span-2">
-                  <label class="block text-slate-300 mb-1 font-medium">正面：考點或定理名稱（Title）：</label>
-                  <input type="text" id="new-fc-title" placeholder="例如：戴維寧最大功率轉移定理" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-ink focus:outline-none focus:border-cyan-500">
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-slate-300 mb-1 font-medium">背面：核心公式或語法（Formula）：</label>
-                <textarea id="new-fc-formula" rows="2" placeholder="例如：當 RL = Rth 時，Pmax = Eth² / (4 × Rth)" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-amber-400 font-mono text-sm focus:outline-none focus:border-cyan-500"></textarea>
-              </div>
-
-              <div>
-                <label class="block text-slate-300 mb-1 font-medium">背面：速記口訣與觀念解析（Note）：</label>
-                <textarea id="new-fc-note" rows="2" placeholder="請輸入記憶口訣、單位換算提醒或常考陷阱說明..." class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-ink focus:outline-none focus:border-cyan-500"></textarea>
-              </div>
-
-              <div id="admin-fc-status-msg" class="hidden p-3 rounded-lg text-xs font-bold"></div>
-
-              <div class="flex justify-end gap-3 pt-2">
-                <button onclick="cancelEditFlashcard()" id="btn-cancel-fc-edit" class="hidden px-4 py-2.5 bg-amber-700 hover:bg-amber-600 text-white rounded-lg text-sm font-bold transition">取消編輯</button>
-                <button onclick="clearAdminFcForm()" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-medium transition">清空表單</button>
-                <button onclick="submitFlashcard()" id="btn-submit-new-fc" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-bold shadow transition">上傳公式卡至雲端</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg space-y-4">
-            <div class="flex flex-wrap justify-between items-center gap-3 border-b border-slate-700 pb-4">
-              <div>
-                <h3 class="text-base font-bold text-ink">雲端必背公式卡清單</h3>
-                <p class="text-xs text-slate-400">可依科目篩選或搜尋關鍵字，點擊右側按鈕即可直接修改或刪除公式卡</p>
-              </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <select id="admin-fc-filter-subject" onchange="renderAdminFlashcardList()" class="bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg px-3 py-1.5 text-xs font-medium focus:outline-none focus:border-cyan-500">
-                  <option value="ALL">全部科目</option>
-                  <option value="國文">國文</option>
-                  <option value="英文">英文</option>
-                  <option value="數學">數學</option>
-                  <option value="基本電學">基本電學</option>
-                  <option value="電子學">電子學</option>
-                  <option value="數位邏輯設計">數位邏輯設計</option>
-                  <option value="程式設計實習">程式設計實習</option>
-                  <option value="微處理機">微處理機</option>
-                  <option value="電腦硬體裝修乙級">電腦硬體裝修乙級</option>
-                </select>
-                <input type="text" id="admin-fc-search-input" oninput="renderAdminFlashcardList()" placeholder="搜尋考點或公式關鍵字..." class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-1.5 text-xs text-ink focus:outline-none focus:border-cyan-500 w-48">
-              </div>
-            </div>
-
-            <div id="admin-flashcard-list" class="space-y-3 max-h-[600px] overflow-y-auto pr-1"></div>
-          </div>
-        </div>
-
-      </div>
-
     </section>
 
   </main>
@@ -823,10 +573,6 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     const SUPABASE_URL = 'https://latjwxnlmlkhvsjumofk.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhdGp3eG5sbWxraHZzanVtb2ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzMjEyNzksImV4cCI6MjEwNzg5NzI3OX0.VY6-EsxbZBY_8OpbVH4A2o3bpjXETR0b-CNotGdlXrs';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    // 管理員使用獨立連線，不持久化，避免與學生的匿名身分混用
-    const adminClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false, storageKey: 'admin-auth' }
-    });
 
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -1038,21 +784,12 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
     }
 
-    let hasSourceCols = false;
     const VERIFY_MAP = { verified: ['✓ 已查核', 'ver-ok'], unverified: ['未查核', 'ver-no'], disputed: ['⚠ 有爭議', 'ver-dis'] };
     function sourceBadge(q) {
       if (!q || (!q.source && !q.verify_status)) return '';
       const v = VERIFY_MAP[q.verify_status];
       return (q.source ? `<span class="src-badge">來源：${esc(q.source)}</span>` : '') +
              (v ? `<span class="ver-badge ${v[1]}">${v[0]}</span>` : '');
-    }
-    function updateSourceFieldsUI() {
-      document.getElementById('admin-src-warn').classList.toggle('hidden', hasSourceCols);
-      document.getElementById('new-q-source').disabled = !hasSourceCols;
-      document.getElementById('new-q-verify').disabled = !hasSourceCols;
-    }
-    function sourceExtra() {
-      return hasSourceCols ? { source: document.getElementById('new-q-source').value, verify_status: document.getElementById('new-q-verify').value } : {};
     }
 
     // ---- 回報題目有誤 ----
@@ -1137,13 +874,11 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       return { data: rows, error: null };
     }
 
-    let isAdminUnlocked = false;
-    let editingQuestionId = null;
-    let editingFlashcardId = null;
 
     let currentUser = null;
     let allQuestions = [];
-    let adminQuestions = [];
+    let pastQuestions = [];
+    let questionById = new Map();
     let questions = [];
     let currentQIndex = 0;
     let isCheckingAnswer = false;
@@ -1309,24 +1044,16 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         document.getElementById('q-counter').innerText = '載入失敗';
         return;
       }
-      allQuestions = data;
+      // 有年度的是歷屆試題，只出現在「歷屆」；刷題區和模擬考只用自編題
+      allQuestions = data.filter(q => q.year == null);
+      pastQuestions = data.filter(q => q.year != null);
+      questionById = new Map(data.map(q => [q.id, q]));
+      if (!document.getElementById('tab-past').classList.contains('hidden')) renderPastList();
       if (allQuestions.length > 0) {
         filterBySubject();
       } else {
-        document.getElementById('q-text-container').innerHTML = '<h2 class="text-lg font-medium leading-relaxed text-ink">目前尚無題目，請至「後台管理」新增題目。</h2>';
+        document.getElementById('q-text-container').innerHTML = '<h2 class="text-lg font-medium leading-relaxed text-ink">目前尚無題目。</h2>';
       }
-    }
-
-    async function fetchAdminQuestions() {
-      const { data, error } = await fetchAllRows('questions', adminClient);
-      if (error) {
-        showError('管理員題庫載入失敗：' + error.message);
-        return;
-      }
-      adminQuestions = data || [];
-      hasSourceCols = adminQuestions.length > 0 && Object.prototype.hasOwnProperty.call(adminQuestions[0], 'source');
-      updateSourceFieldsUI();
-      renderAdminQuestionList();
     }
 
     async function fetchAllFlashcards() {
@@ -1340,6 +1067,65 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     }
 
     const chapterOf = q => (window.CHAPTER_OF || {})[q.id] || '';
+    // 題目附圖（電路圖等）放在網站 repo 的 img/ 底下；白底讓深色模式也看得清楚
+    const questionImage = q => q.image_url
+      ? `<img src="${esc(q.image_url)}" alt="第 ${esc(q.number ?? '')} 題附圖" loading="lazy" class="mt-3 max-w-full h-auto rounded-lg bg-white p-2 border border-slate-700">`
+      : '';
+
+    // ==================== 統測歷屆 ====================
+    const PAPER_ORDER = ['專業科目(一)', '專業科目(二)'];
+    function renderPastList() {
+      const box = document.getElementById('past-list');
+      if (pastQuestions.length === 0) {
+        box.innerHTML = `
+          <div class="bg-slate-800 p-8 rounded-xl border border-slate-700 text-center">
+            <p class="font-bold text-ink mb-1">歷屆試題整理中</p>
+            <p class="text-sm text-slate-400">第一批會是 115 年電機與電子群資電類的專業科目(一)、(二)。</p>
+          </div>`;
+        return;
+      }
+      const papers = new Map();
+      pastQuestions.forEach(q => {
+        const k = `${q.year}|${q.paper}`;
+        if (!papers.has(k)) papers.set(k, { year: q.year, paper: q.paper, track: q.track, subjects: new Set(), n: 0 });
+        const p = papers.get(k);
+        p.n++;
+        p.subjects.add(q.subject);
+      });
+      const years = [...new Set([...papers.values()].map(p => p.year))].sort((a, b) => b - a);
+      box.innerHTML = years.map(y => `
+        <div>
+          <h3 class="text-sm font-bold text-slate-300 mb-2">${y} 年統測</h3>
+          <div class="grid gap-3 sm:grid-cols-2">
+            ${[...papers.values()].filter(p => p.year === y)
+              .sort((a, b) => PAPER_ORDER.indexOf(a.paper) - PAPER_ORDER.indexOf(b.paper))
+              .map(p => `
+              <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="font-bold text-ink">${esc(p.paper)}</p>
+                  <p class="text-xs text-slate-400 mt-0.5">${esc([...p.subjects].join('、'))}・共 ${p.n} 題</p>
+                  <p class="text-xs text-slate-500 mt-0.5">${esc(p.track || '')}</p>
+                </div>
+                <button onclick="startPast(${p.year}, '${esc(p.paper)}')" class="shrink-0 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-bold transition">開始作答</button>
+              </div>`).join('')}
+          </div>
+        </div>`).join('');
+    }
+
+    function startPast(year, paper) {
+      questions = pastQuestions.filter(q => q.year === year && q.paper === paper).sort((a, b) => a.number - b.number);
+      if (questions.length === 0) return;
+      currentMode = 'past';
+      currentQIndex = 0;
+      document.getElementById('tab-past').classList.add('hidden');
+      document.getElementById('tab-quiz').classList.remove('hidden');
+      document.getElementById('subject-wrap').classList.add('hidden');
+      document.getElementById('chapter-wrap').classList.add('hidden');
+      document.getElementById('past-back').classList.remove('hidden');
+      document.getElementById('q-counter').innerText = `${year} 統測・${paper}（共 ${questions.length} 題）`;
+      window.scrollTo({ top: 0 });
+      renderQuestion();
+    }
 
     // 換科目時重建章節選單；keepChapter=true 表示只換章節，保留目前選的章節
     function filterBySubject(keepChapter) {
@@ -1354,6 +1140,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         }).join('');
       }
       document.getElementById('chapter-wrap').classList.toggle('hidden', chapters.length === 0);
+      document.getElementById('subject-wrap').classList.remove('hidden');
+      document.getElementById('past-back').classList.add('hidden');
       const chap = chapters.length ? chapSel.value : 'ALL';
 
       if (selected === 'ALL') {
@@ -1376,7 +1164,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         document.getElementById('q-subject').innerText = selected === 'ALL' ? '全部' : selected;
         document.getElementById('q-source').innerHTML = '';
         document.getElementById('btn-report-q').classList.add('hidden');
-        document.getElementById('q-text-container').innerHTML = `<h2 class="text-lg font-medium leading-relaxed text-ink">【${esc(selected)}】目前尚無題目，可點擊上方「後台管理」新增題目。</h2>`;
+        document.getElementById('q-text-container').innerHTML = `<h2 class="text-lg font-medium leading-relaxed text-ink">【${esc(selected)}】目前尚無題目。</h2>`;
         document.getElementById('q-options').innerHTML = '';
         document.getElementById('q-explanation-box').classList.add('hidden');
       }
@@ -1394,7 +1182,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('q-subject').innerText = (currentMode === 'mistake') ? `[錯題重練] ${subjLabel}` : subjLabel;
       document.getElementById('q-source').innerHTML = sourceBadge(q);
       document.getElementById('btn-report-q').classList.remove('hidden');
-      document.getElementById('q-text-container').innerHTML = formatQuestionText(`${idx + 1}. ${q.question_text}`);
+      document.getElementById('q-text-container').innerHTML = formatQuestionText(`${currentMode === 'past' ? q.number : idx + 1}. ${q.question_text}`) + questionImage(q);
       document.getElementById('q-explanation-box').classList.add('hidden');
 
       const optionsBox = document.getElementById('q-options');
@@ -1627,7 +1415,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       const chapSel = document.getElementById('chapter-filter');
       if (!Array.from(sel.options).some(o => o.value === subject)) return;
       sel.value = subject;
-      if (currentMode === 'mistake') { currentMode = 'normal'; sel.disabled = false; chapSel.disabled = false; }
+      if (currentMode !== 'normal') { currentMode = 'normal'; sel.disabled = false; chapSel.disabled = false; }
       filterBySubject();
       if (chapter && Array.from(chapSel.options).some(o => o.value === chapter)) {
         chapSel.value = chapter;
@@ -1662,7 +1450,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         document.getElementById('fc-counter').innerText = '共 0 張';
         const v = document.getElementById('fc-subject-filter').value;
         document.getElementById('fc-badge-subject').innerText = v === 'ALL' ? '全部' : v;
-        document.getElementById('fc-main-title').innerText = '此分類目前尚無公式卡，可至「後台管理 -> 管理必背公式卡」新增！';
+        document.getElementById('fc-main-title').innerText = '此分類目前尚無公式卡';
         document.getElementById('fc-back-details').classList.add('hidden');
         return;
       }
@@ -1966,7 +1754,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         return;
       }
       container.innerHTML = '';
-      mistakeAll = data || [];
+      // 補上出處、附圖等欄位（錯題本函式只回傳題目文字）
+      mistakeAll = (data || []).map(q => ({ ...questionById.get(q.id), ...q }));
       mistakeQuestions = mistakeAll.slice();
 
       if (mistakeAll.length === 0) {
@@ -2044,6 +1833,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('tab-quiz').classList.remove('hidden');
       document.getElementById('subject-filter').disabled = true;
       document.getElementById('chapter-filter').disabled = true;
+      document.getElementById('subject-wrap').classList.remove('hidden');
+      document.getElementById('past-back').classList.add('hidden');
       setNavActive('quiz');
       document.getElementById('q-counter').innerText = `錯題重練 (共 ${mistakeQuestions.length} 題)`;
       renderQuestion();
@@ -2111,593 +1902,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         `;
       }).join('');
     }
-
-    // ==================== 後台管理系統 ====================
-    function renderAdminTab() {
-      if (isAdminUnlocked) {
-        document.getElementById('admin-lock-screen').classList.add('hidden');
-        document.getElementById('admin-panel-content').classList.remove('hidden');
-        renderAdminQuestionList();
-        renderAdminFlashcardList();
-      } else {
-        document.getElementById('admin-lock-screen').classList.remove('hidden');
-        document.getElementById('admin-panel-content').classList.add('hidden');
-      }
-    }
-
-    async function unlockAdminPanel() {
-      const email = document.getElementById('admin-email-input').value.trim();
-      const password = document.getElementById('admin-pin-input').value;
-      if (!email || !password) { alert('請輸入管理員 Email 與密碼'); return; }
-      const { data, error } = await adminClient.auth.signInWithPassword({ email, password });
-      if (error) { alert('登入失敗：' + error.message); return; }
-      const { data: row } = await adminClient.from('admins').select('user_id').eq('user_id', data.user.id).maybeSingle();
-      if (!row) { await adminClient.auth.signOut(); alert('此帳號沒有管理員權限'); return; }
-      isAdminUnlocked = true;
-      document.getElementById('admin-pin-input').value = '';
-      await fetchAdminQuestions();
-      renderAdminTab();
-    }
-
-    function switchAdminSubTab(subTab) {
-      if (subTab === 'questions') {
-        document.getElementById('admin-section-questions').classList.remove('hidden');
-        document.getElementById('admin-section-flashcards').classList.add('hidden');
-        document.getElementById('btn-admin-sub-q').className = 'flex-1 py-2.5 rounded-lg bg-cyan-600 text-white font-bold text-sm transition';
-        document.getElementById('btn-admin-sub-fc').className = 'flex-1 py-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium text-sm transition';
-        renderAdminQuestionList();
-      } else {
-        document.getElementById('admin-section-questions').classList.add('hidden');
-        document.getElementById('admin-section-flashcards').classList.remove('hidden');
-        document.getElementById('btn-admin-sub-fc').className = 'flex-1 py-2.5 rounded-lg bg-cyan-600 text-white font-bold text-sm transition';
-        document.getElementById('btn-admin-sub-q').className = 'flex-1 py-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium text-sm transition';
-        renderAdminFlashcardList();
-      }
-    }
-
-    function toCsvCell(val) {
-      const s = String(val ?? '').replace(/"/g, '""');
-      return `"${s}"`;
-    }
-
-    function downloadCsvFile(filename, csvContent) {
-      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
-    function exportQuestionsCSV() {
-      if (adminQuestions.length === 0) { alert('目前沒有題目可匯出'); return; }
-      const headers = ['id', 'subject', 'question_text', 'options', 'correct_option', 'explanation', ...(hasSourceCols ? ['source', 'verify_status'] : [])];
-      const rows = adminQuestions.map(q => [
-        toCsvCell(q.id),
-        toCsvCell(q.subject),
-        toCsvCell(q.question_text),
-        toCsvCell(typeof q.options === 'string' ? q.options : JSON.stringify(q.options)),
-        toCsvCell(q.correct_option),
-        toCsvCell(q.explanation),
-        ...(hasSourceCols ? [toCsvCell(q.source), toCsvCell(q.verify_status)] : [])
-      ].join(','));
-      downloadCsvFile(`questions_backup_${new Date().toISOString().slice(0, 10)}.csv`, [headers.join(','), ...rows].join('\r\n'));
-    }
-
-    function exportFlashcardsCSV() {
-      if (allFlashcards.length === 0) { alert('目前沒有公式卡可匯出'); return; }
-      const headers = ['id', 'subject', 'title', 'formula', 'note'];
-      const rows = allFlashcards.map(fc => [
-        toCsvCell(fc.id),
-        toCsvCell(fc.subject),
-        toCsvCell(fc.title),
-        toCsvCell(fc.formula),
-        toCsvCell(fc.note)
-      ].join(','));
-      downloadCsvFile(`flashcards_backup_${new Date().toISOString().slice(0, 10)}.csv`, [headers.join(','), ...rows].join('\r\n'));
-    }
-
-    function parseCsvLine(text) {
-      const res = [];
-      let cur = '';
-      let inQuote = false;
-      for (let i = 0; i < text.length; i++) {
-        const c = text[i];
-        if (c === '"') {
-          if (inQuote && text[i + 1] === '"') { cur += '"'; i++; }
-          else { inQuote = !inQuote; }
-        } else if (c === ',' && !inQuote) {
-          res.push(cur);
-          cur = '';
-        } else {
-          cur += c;
-        }
-      }
-      res.push(cur);
-      return res.map(s => s.trim());
-    }
-
-    async function importQuestionsCSV() {
-      const fileInput = document.getElementById('csv-file-input');
-      const statusBox = document.getElementById('csv-import-status');
-      if (!fileInput.files || fileInput.files.length === 0) {
-        alert('請先選擇要上傳的 CSV 檔案！');
-        return;
-      }
-      const file = fileInput.files[0];
-      const reader = new FileReader();
-
-      reader.onload = async function(e) {
-        const text = e.target.result;
-        const lines = text.split(/\r\n|\n/).filter(l => l.trim() !== '');
-        if (lines.length <= 1) {
-          alert('CSV 檔案內容為空或僅有標題列！');
-          return;
-        }
-
-        statusBox.innerText = '正在解析並批次匯入中...';
-        statusBox.className = 'text-xs font-bold p-2.5 rounded-lg bg-cyan-950 text-cyan-300 border border-cyan-700';
-        statusBox.classList.remove('hidden');
-
-        let successCount = 0;
-        let failCount = 0;
-
-        for (let i = 1; i < lines.length; i++) {
-          const cols = parseCsvLine(lines[i]);
-          if (cols.length < 8) { failCount++; continue; }
-
-          const subject = cols[0];
-          const question_text = cols[1];
-          const optA = cols[2];
-          const optB = cols[3];
-          const optC = cols[4];
-          const optD = cols[5];
-          const correct_option = parseInt(cols[6], 10);
-          const explanation = cols[7];
-
-          if (!subject || !question_text || isNaN(correct_option)) {
-            failCount++;
-            continue;
-          }
-
-          const options = [
-            formatOptionPrefix(optA, 'A'),
-            formatOptionPrefix(optB, 'B'),
-            formatOptionPrefix(optC, 'C'),
-            formatOptionPrefix(optD, 'D')
-          ];
-
-          const { error } = await adminClient.from('questions').insert({
-            subject, question_text, options, correct_option, explanation
-          });
-
-          if (error) failCount++;
-          else successCount++;
-        }
-
-        statusBox.innerText = `批次匯入完成！成功新增 ${successCount} 筆題目（失敗/略過 ${failCount} 筆）。`;
-        statusBox.className = 'text-xs font-bold p-2.5 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-700';
-        fileInput.value = '';
-        await Promise.all([fetchAdminQuestions(), fetchAllPublicQuestions()]);
-      };
-      reader.readAsText(file, 'UTF-8');
-    }
-
-    // --- (1) 題庫管理 CRUD ---
-    function renderAdminQuestionList() {
-      document.getElementById('admin-total-count').innerText = `目前總題數：${adminQuestions.length} 題`;
-      const filterSub = document.getElementById('admin-filter-subject').value;
-      const keyword = document.getElementById('admin-search-input').value.trim().toLowerCase();
-
-      const filtered = adminQuestions.filter(q => {
-        const matchSub = (filterSub === 'ALL') || (q.subject === filterSub);
-        const matchKey = !keyword || 
-          q.question_text.toLowerCase().includes(keyword) || 
-          (q.explanation && q.explanation.toLowerCase().includes(keyword));
-        return matchSub && matchKey;
-      });
-
-      const listEl = document.getElementById('admin-question-list');
-      listEl.innerHTML = '';
-
-      if (filtered.length === 0) {
-        listEl.innerHTML = '<div class="text-center p-6 text-slate-400 text-xs">找不到符合條件的題目</div>';
-        return;
-      }
-
-      [...filtered].reverse().forEach(q => {
-        const parsedOptions = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
-        const ansLetter = ['A', 'B', 'C', 'D'][q.correct_option] || 'A';
-
-        const card = document.createElement('div');
-        card.className = 'p-4 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-600 transition space-y-2';
-        card.innerHTML = `
-          <div class="flex flex-wrap justify-between items-start gap-2">
-            <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 bg-slate-800 text-cyan-400 border border-slate-700 rounded text-xs font-bold">${esc(q.subject)}</span>
-              <span class="text-slate-500 font-mono text-xs">ID: #${q.id}</span> ${sourceBadge(q)}
-              <span class="text-emerald-400 font-mono text-xs font-bold">正解: (${ansLetter})</span>
-            </div>
-            <div class="flex gap-2">
-              <button onclick="startEditQuestion(${q.id})" class="px-3 py-1 bg-cyan-700 hover:bg-cyan-600 text-white rounded text-xs font-bold transition">編輯</button>
-              <button onclick="deleteQuestion(${q.id})" class="px-3 py-1 bg-rose-800 hover:bg-rose-700 text-white rounded text-xs font-bold transition">刪除</button>
-            </div>
-          </div>
-          <div class="text-slate-100 text-sm font-medium whitespace-pre-wrap font-mono">${esc(q.question_text)}</div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-1 text-xs text-slate-400 font-mono pt-1">
-            ${parsedOptions.map((opt, i) => `<div class="${i === q.correct_option ? 'text-emerald-400 font-bold' : ''}">${esc(opt)}</div>`).join('')}
-          </div>
-          <div class="text-xs text-slate-400 bg-slate-800/60 p-2 rounded border border-slate-800 whitespace-pre-wrap">
-            <strong class="text-cyan-400">【詳解】</strong>${esc(q.explanation)}
-          </div>
-        `;
-        listEl.appendChild(card);
-      });
-    }
-
-    function stripOptionPrefix(optText) {
-      if (!optText) return '';
-      return optText.replace(/^\([A-D]\) /, '');
-    }
-
-    function startEditQuestion(id) {
-      const q = adminQuestions.find(item => item.id === id);
-      if (!q) return;
-
-      editingQuestionId = q.id;
-      const parsedOptions = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
-
-      document.getElementById('new-q-subject').value = q.subject;
-      document.getElementById('new-q-correct').value = String(q.correct_option);
-      document.getElementById('new-q-text').value = q.question_text;
-      document.getElementById('new-opt-0').value = stripOptionPrefix(parsedOptions[0]);
-      document.getElementById('new-opt-1').value = stripOptionPrefix(parsedOptions[1]);
-      document.getElementById('new-opt-2').value = stripOptionPrefix(parsedOptions[2]);
-      document.getElementById('new-opt-3').value = stripOptionPrefix(parsedOptions[3]);
-      document.getElementById('new-q-exp').value = q.explanation;
-      if (hasSourceCols) {
-        document.getElementById('new-q-source').value = q.source || '自編';
-        document.getElementById('new-q-verify').value = q.verify_status || 'unverified';
-      }
-
-      document.getElementById('admin-form-card').className = 'bg-slate-800 p-6 rounded-xl border-2 border-amber-500 shadow-lg transition';
-      document.getElementById('admin-form-title').innerText = `正在編輯題目 (ID: #${q.id})`;
-      document.getElementById('admin-form-title').className = 'text-lg font-bold text-amber-400';
-      document.getElementById('admin-form-subtitle').innerText = '修改下方欄位後點擊「儲存題目修改」，即可直接更新雲端題庫';
-      document.getElementById('btn-submit-new-q').innerText = '儲存題目修改';
-      document.getElementById('btn-submit-new-q').className = 'px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-sm font-bold shadow transition';
-      document.getElementById('btn-cancel-edit').classList.remove('hidden');
-      document.getElementById('admin-status-msg').classList.add('hidden');
-
-      document.getElementById('admin-form-card').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function cancelEditMode() {
-      editingQuestionId = null;
-      clearAdminForm();
-      document.getElementById('admin-form-card').className = 'bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg transition';
-      document.getElementById('admin-form-title').innerText = '線上快速新增題目';
-      document.getElementById('admin-form-title').className = 'text-lg font-bold text-cyan-400';
-      document.getElementById('admin-form-subtitle').innerText = '填寫完畢後點擊送出，題目將直接寫入雲端資料庫並立即生效';
-      document.getElementById('btn-submit-new-q').innerText = '上傳題目至雲端題庫';
-      document.getElementById('btn-submit-new-q').className = 'px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-bold shadow transition';
-      document.getElementById('btn-cancel-edit').classList.add('hidden');
-    }
-
-    function clearAdminForm() {
-      document.getElementById('new-q-text').value = '';
-      document.getElementById('new-opt-0').value = '';
-      document.getElementById('new-opt-1').value = '';
-      document.getElementById('new-opt-2').value = '';
-      document.getElementById('new-opt-3').value = '';
-      document.getElementById('new-q-exp').value = '';
-      document.getElementById('admin-status-msg').classList.add('hidden');
-    }
-
-    function formatOptionPrefix(text, letter) {
-      const clean = text.trim().replace(new RegExp(`^[(（]${letter}[)）]\\s+`, 'i'), '');
-      return `(${letter}) ${clean}`;
-    }
-
-    async function submitNewQuestion() {
-      const subject = document.getElementById('new-q-subject').value;
-      const correct_option = parseInt(document.getElementById('new-q-correct').value, 10);
-      const question_text = document.getElementById('new-q-text').value.trim();
-      const rawOpt0 = document.getElementById('new-opt-0').value.trim();
-      const rawOpt1 = document.getElementById('new-opt-1').value.trim();
-      const rawOpt2 = document.getElementById('new-opt-2').value.trim();
-      const rawOpt3 = document.getElementById('new-opt-3').value.trim();
-      const explanation = document.getElementById('new-q-exp').value.trim();
-
-      const statusBox = document.getElementById('admin-status-msg');
-      if (!question_text || !rawOpt0 || !rawOpt1 || !rawOpt2 || !rawOpt3 || !explanation) {
-        statusBox.innerText = '請將所有欄位填寫完整！';
-        statusBox.className = 'p-3 rounded-lg text-xs font-bold bg-rose-950 text-rose-400 border border-rose-700';
-        statusBox.classList.remove('hidden');
-        return;
-      }
-
-      const options = [
-        formatOptionPrefix(rawOpt0, 'A'),
-        formatOptionPrefix(rawOpt1, 'B'),
-        formatOptionPrefix(rawOpt2, 'C'),
-        formatOptionPrefix(rawOpt3, 'D')
-      ];
-
-      const submitBtn = document.getElementById('btn-submit-new-q');
-      submitBtn.disabled = true;
-      submitBtn.innerText = '處理中...';
-
-      if (editingQuestionId !== null) {
-        const targetId = editingQuestionId;
-        const { data, error } = await adminClient
-          .from('questions')
-          .update({ subject, question_text, options, correct_option, explanation, ...sourceExtra() })
-          .eq('id', targetId)
-          .select()
-          .maybeSingle();
-
-        submitBtn.disabled = false;
-
-        if (error || !data) {
-          submitBtn.innerText = '儲存題目修改';
-          statusBox.innerText = '修改失敗：' + (error ? error.message : '沒有任何資料被更新');
-          statusBox.className = 'p-3 rounded-lg text-xs font-bold bg-rose-950 text-rose-400 border border-rose-700';
-          statusBox.classList.remove('hidden');
-        } else {
-          const idx = adminQuestions.findIndex(item => item.id === targetId);
-          if (idx !== -1) adminQuestions[idx] = data;
-          const pubIdx = allQuestions.findIndex(item => item.id === targetId);
-          if (pubIdx !== -1) allQuestions[pubIdx] = { id: data.id, subject: data.subject, question_text: data.question_text, options: data.options, source: data.source, verify_status: data.verify_status };
-          cancelEditMode();
-          statusBox.innerText = `題目 (ID: #${targetId}) 修改成功！`;
-          statusBox.className = 'p-3 rounded-lg text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-700';
-          statusBox.classList.remove('hidden');
-          renderAdminQuestionList();
-        }
-      } else {
-        const { data, error } = await adminClient
-          .from('questions')
-          .insert({ subject, question_text, options, correct_option, explanation, ...sourceExtra() })
-          .select()
-          .maybeSingle();
-
-        submitBtn.disabled = false;
-        submitBtn.innerText = '上傳題目至雲端題庫';
-
-        if (error || !data) {
-          statusBox.innerText = '上傳失敗：' + (error ? error.message : '沒有收到回傳資料');
-          statusBox.className = 'p-3 rounded-lg text-xs font-bold bg-rose-950 text-rose-400 border border-rose-700';
-          statusBox.classList.remove('hidden');
-        } else {
-          adminQuestions.push(data);
-          allQuestions.push({ id: data.id, subject: data.subject, question_text: data.question_text, options: data.options, source: data.source, verify_status: data.verify_status });
-          clearAdminForm();
-          statusBox.innerText = `新增成功！目前全站共 ${adminQuestions.length} 題。`;
-          statusBox.className = 'p-3 rounded-lg text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-700';
-          statusBox.classList.remove('hidden');
-          renderAdminQuestionList();
-        }
-      }
-    }
-
-    async function deleteQuestion(id) {
-      const q = adminQuestions.find(item => item.id === id);
-      if (!q) return;
-
-      if (!confirm(`確定要永久刪除這道題目嗎？\n\n[ID: #${q.id}] ${q.question_text}`)) {
-        return;
-      }
-
-      const { data: delRows, error } = await adminClient
-        .from('questions')
-        .delete()
-        .eq('id', id)
-        .select();
-
-      if (error || !delRows || delRows.length === 0) {
-        alert('刪除失敗：' + (error ? error.message : '沒有任何資料被刪除'));
-      } else {
-        adminQuestions = adminQuestions.filter(item => item.id !== id);
-        allQuestions = allQuestions.filter(item => item.id !== id);
-        if (editingQuestionId === id) {
-          cancelEditMode();
-        }
-        renderAdminQuestionList();
-      }
-    }
-
-    // --- (2) 必背公式卡管理 CRUD ---
-    function renderAdminFlashcardList() {
-      document.getElementById('admin-fc-total-count').innerText = `目前總卡數：${allFlashcards.length} 張`;
-      const filterSub = document.getElementById('admin-fc-filter-subject').value;
-      const keyword = document.getElementById('admin-fc-search-input').value.trim().toLowerCase();
-
-      const filtered = allFlashcards.filter(fc => {
-        const matchSub = (filterSub === 'ALL') || (fc.subject === filterSub);
-        const matchKey = !keyword || 
-          fc.title.toLowerCase().includes(keyword) || 
-          fc.formula.toLowerCase().includes(keyword) ||
-          fc.note.toLowerCase().includes(keyword);
-        return matchSub && matchKey;
-      });
-
-      const listEl = document.getElementById('admin-flashcard-list');
-      listEl.innerHTML = '';
-
-      if (filtered.length === 0) {
-        listEl.innerHTML = '<div class="text-center p-6 text-slate-400 text-xs">找不到符合條件的公式卡</div>';
-        return;
-      }
-
-      [...filtered].reverse().forEach(fc => {
-        const card = document.createElement('div');
-        card.className = 'p-4 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-600 transition space-y-2';
-        card.innerHTML = `
-          <div class="flex flex-wrap justify-between items-start gap-2">
-            <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 bg-slate-800 text-cyan-400 border border-slate-700 rounded text-xs font-bold">${esc(fc.subject)}</span>
-              <span class="text-slate-500 font-mono text-xs">ID: #${fc.id}</span>
-            </div>
-            <div class="flex gap-2">
-              <button onclick="startEditFlashcard(${fc.id})" class="px-3 py-1 bg-cyan-700 hover:bg-cyan-600 text-white rounded text-xs font-bold transition">編輯</button>
-              <button onclick="deleteFlashcard(${fc.id})" class="px-3 py-1 bg-rose-800 hover:bg-rose-700 text-white rounded text-xs font-bold transition">刪除</button>
-            </div>
-          </div>
-          <div class="text-ink text-sm font-bold">${esc(fc.title)}</div>
-          <div class="text-amber-400 text-xs font-mono bg-slate-950 p-2.5 rounded border border-slate-800 whitespace-pre-wrap">${esc(fc.formula)}</div>
-          <div class="text-xs text-slate-400 bg-slate-800/60 p-2 rounded border border-slate-800 whitespace-pre-wrap">
-            <strong class="text-cyan-400">【解析與口訣】</strong>${esc(fc.note)}
-          </div>
-        `;
-        listEl.appendChild(card);
-      });
-    }
-
-    function startEditFlashcard(id) {
-      const fc = allFlashcards.find(item => item.id === id);
-      if (!fc) return;
-      if (fc.isDefault) { alert('這是內建預設卡（雲端尚無資料），請改用「新增」建立。'); return; }
-
-      editingFlashcardId = fc.id;
-      document.getElementById('new-fc-subject').value = fc.subject;
-      document.getElementById('new-fc-title').value = fc.title;
-      document.getElementById('new-fc-formula').value = fc.formula;
-      document.getElementById('new-fc-note').value = fc.note;
-
-      document.getElementById('admin-fc-form-card').className = 'bg-slate-800 p-6 rounded-xl border-2 border-amber-500 shadow-lg transition';
-      document.getElementById('admin-fc-form-title').innerText = `正在編輯公式卡 (ID: #${fc.id})`;
-      document.getElementById('admin-fc-form-title').className = 'text-lg font-bold text-amber-400';
-      document.getElementById('admin-fc-form-subtitle').innerText = '修改下方欄位後點擊「儲存公式卡修改」，即可直接更新雲端資料庫';
-      document.getElementById('btn-submit-new-fc').innerText = '儲存公式卡修改';
-      document.getElementById('btn-submit-new-fc').className = 'px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-sm font-bold shadow transition';
-      document.getElementById('btn-cancel-fc-edit').classList.remove('hidden');
-      document.getElementById('admin-fc-status-msg').classList.add('hidden');
-
-      document.getElementById('admin-fc-form-card').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function cancelEditFlashcard() {
-      editingFlashcardId = null;
-      clearAdminFcForm();
-      document.getElementById('admin-fc-form-card').className = 'bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg transition';
-      document.getElementById('admin-fc-form-title').innerText = '新增必背公式卡';
-      document.getElementById('admin-fc-form-title').className = 'text-lg font-bold text-cyan-400';
-      document.getElementById('admin-fc-form-subtitle').innerText = '新增或修改後將同步至 Supabase 的 flashcards 資料表';
-      document.getElementById('btn-submit-new-fc').innerText = '上傳公式卡至雲端';
-      document.getElementById('btn-submit-new-fc').className = 'px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-bold shadow transition';
-      document.getElementById('btn-cancel-fc-edit').classList.add('hidden');
-    }
-
-    function clearAdminFcForm() {
-      document.getElementById('new-fc-title').value = '';
-      document.getElementById('new-fc-formula').value = '';
-      document.getElementById('new-fc-note').value = '';
-      document.getElementById('admin-fc-status-msg').classList.add('hidden');
-    }
-
-    async function submitFlashcard() {
-      const subject = document.getElementById('new-fc-subject').value;
-      const title = document.getElementById('new-fc-title').value.trim();
-      const formula = document.getElementById('new-fc-formula').value.trim();
-      const note = document.getElementById('new-fc-note').value.trim();
-
-      const statusBox = document.getElementById('admin-fc-status-msg');
-      if (!title || !formula || !note) {
-        statusBox.innerText = '請將考點名稱、核心公式與解析全部填寫完整！';
-        statusBox.className = 'p-3 rounded-lg text-xs font-bold bg-rose-950 text-rose-400 border border-rose-700';
-        statusBox.classList.remove('hidden');
-        return;
-      }
-
-      const submitBtn = document.getElementById('btn-submit-new-fc');
-      submitBtn.disabled = true;
-      submitBtn.innerText = '處理中...';
-
-      if (editingFlashcardId !== null) {
-        const targetId = editingFlashcardId;
-        const { data, error } = await adminClient
-          .from('flashcards')
-          .update({ subject, title, formula, note })
-          .eq('id', targetId)
-          .select()
-          .maybeSingle();
-
-        submitBtn.disabled = false;
-
-        if (error || !data) {
-          submitBtn.innerText = '儲存公式卡修改';
-          statusBox.innerText = '修改失敗：' + (error ? error.message : '沒有任何資料被更新');
-          statusBox.className = 'p-3 rounded-lg text-xs font-bold bg-rose-950 text-rose-400 border border-rose-700';
-          statusBox.classList.remove('hidden');
-        } else {
-          const idx = allFlashcards.findIndex(item => item.id === targetId);
-          if (idx !== -1) {
-            allFlashcards[idx] = data || { id: targetId, subject, title, formula, note };
-          }
-          cancelEditFlashcard();
-          statusBox.innerText = `公式卡 (ID: #${targetId}) 修改成功！`;
-          statusBox.className = 'p-3 rounded-lg text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-700';
-          statusBox.classList.remove('hidden');
-          renderAdminFlashcardList();
-        }
-      } else {
-        const { data, error } = await adminClient
-          .from('flashcards')
-          .insert({ subject, title, formula, note })
-          .select()
-          .maybeSingle();
-
-        submitBtn.disabled = false;
-        submitBtn.innerText = '上傳公式卡至雲端';
-
-        if (error || !data) {
-          statusBox.innerText = '上傳失敗：' + (error ? error.message : '沒有收到回傳資料');
-          statusBox.className = 'p-3 rounded-lg text-xs font-bold bg-rose-950 text-rose-400 border border-rose-700';
-          statusBox.classList.remove('hidden');
-        } else {
-          allFlashcards = allFlashcards.filter(f => !f.isDefault);
-          allFlashcards.push(data);
-          clearAdminFcForm();
-          statusBox.innerText = `公式卡新增成功！目前全站共 ${allFlashcards.length} 張公式卡。`;
-          statusBox.className = 'p-3 rounded-lg text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-700';
-          statusBox.classList.remove('hidden');
-          renderAdminFlashcardList();
-        }
-      }
-    }
-
-    async function deleteFlashcard(id) {
-      const fc = allFlashcards.find(item => item.id === id);
-      if (!fc) return;
-      if (fc.isDefault) { alert('這是內建預設卡（雲端尚無資料），請改用「新增」建立。'); return; }
-
-      if (!confirm(`確定要永久刪除這張公式卡嗎？\n\n[ID: #${fc.id}] ${fc.title}`)) {
-        return;
-      }
-
-      const { data: delRows, error } = await adminClient
-        .from('flashcards')
-        .delete()
-        .eq('id', id)
-        .select();
-
-      if (error || !delRows || delRows.length === 0) {
-        alert('刪除失敗：' + (error ? error.message : '沒有任何資料被刪除'));
-      } else {
-        allFlashcards = allFlashcards.filter(item => item.id !== id);
-        if (editingFlashcardId === id) {
-          cancelEditFlashcard();
-        }
-        renderAdminFlashcardList();
-      }
-    }
-
     // ==================== 頂部頁籤切換 ====================
-    const TAB_IDS = ['quiz', 'exam', 'flashcards', 'mistakes', 'leaderboard', 'admin'];
+    const TAB_IDS = ['quiz', 'past', 'exam', 'flashcards', 'mistakes', 'leaderboard'];
     function setNavActive(tab) {
       TAB_IDS.forEach(t => {
         const el = document.getElementById(`nav-${t}`);
@@ -2747,11 +1953,11 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       window.scrollTo({ top: 0 });
 
       if (tab === 'quiz') {
-        const wasMistake = currentMode === 'mistake';
+        const wasOther = currentMode !== 'normal';
         currentMode = 'normal';
         document.getElementById('subject-filter').disabled = false;
         document.getElementById('chapter-filter').disabled = false;
-        if (wasMistake || questions.length === 0) filterBySubject(true);
+        if (wasOther || questions.length === 0) filterBySubject(true);
         else { document.getElementById('q-counter').innerText = `本區共 ${questions.length} 題`; renderQuestion(); }
       } else if (tab === 'exam') {
         resetExamLobby();
@@ -2761,8 +1967,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         loadMistakeBook();
       } else if (tab === 'leaderboard') {
         loadLeaderboard();
-      } else if (tab === 'admin') {
-        renderAdminTab();
+      } else if (tab === 'past') {
+        renderPastList();
       }
     }
 
