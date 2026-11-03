@@ -433,7 +433,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
           <p id="lb-note" class="text-xs text-slate-400">即時同步全站使用者的刷題數量與答題正確率（正確率榜需累積 20 題以上）</p>
         </div>
         <div class="flex gap-2">
-          <button onclick="loadLeaderboard('total')" id="btn-sort-total" class="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold transition">依刷題量排序</button>
+          <button onclick="loadLeaderboard('week')" id="btn-sort-week" class="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold transition">本週</button>
+          <button onclick="loadLeaderboard('total')" id="btn-sort-total" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium transition">累積刷題量</button>
           <button onclick="loadLeaderboard('acc')" id="btn-sort-acc" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium transition">依正確率排序</button>
         </div>
       </div>
@@ -1149,6 +1150,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
     let currentMode = 'normal';
     let mistakeQuestions = [];
+    let mistakeAll = [];
     let currentMistakeIndex = 0;
 
     let examQuestions = [];
@@ -1289,7 +1291,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         updateUserHeaderUI();
         closeProfileModal();
         if (!document.getElementById('tab-leaderboard').classList.contains('hidden')) {
-          loadLeaderboard('total');
+          loadLeaderboard();
         }
       }
     }
@@ -1458,9 +1460,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       expBox.classList.remove('result-correct', 'result-wrong');
       expBox.classList.add(isCorrect ? 'result-correct' : 'result-wrong');
       title.className = 'result-title';
+      const note = mistakeNote(isCorrect, gradeResult.mistake);
       title.innerHTML = isCorrect
-        ? `<span class="result-icon">✓</span><span><b>答對了！</b><small>${currentMode === 'mistake' ? '這題觀念已掌握，已自動從錯題本除名。' : '戰績 +1，保持節奏繼續作答。'}</small></span>`
-        : '<span class="result-icon">✕</span><span><b>答錯了</b><small>已自動收錄進「錯題本」，考前再複習一次。</small></span>';
+        ? `<span class="result-icon">✓</span><span><b>答對了！</b><small>${note || (currentMode === 'mistake' ? '這題觀念已掌握，已自動從錯題本除名。' : '戰績 +1，保持節奏繼續作答。')}</small></span>`
+        : `<span class="result-icon">✕</span><span><b>答錯了</b><small>${note || '已自動收錄進「錯題本」，考前再複習一次。'}</small></span>`;
       document.getElementById('q-explanation').innerText = explanation;
       expBox.classList.remove('hidden');
       expBox.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
@@ -1482,7 +1485,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         const cur = mistakeQuestions[currentMistakeIndex];
         const keep = mistakeQuestions.filter(x => !x._cleared);
         if (keep.length === 0) {
-          alert('錯題已全部消除！');
+          alert('這一輪複習完成！');
           switchTab('mistakes');
           return;
         }
@@ -1954,16 +1957,19 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         return;
       }
 
-      const { data, error: mbErr } = await supabaseClient.rpc('get_my_mistake_questions');
+      let { data, error: mbErr } = await supabaseClient.rpc('get_my_mistakes_v2');
+      // 資料庫還沒有新版函式時，退回舊版（沒有複習進度）
+      if (mbErr) ({ data, error: mbErr } = await supabaseClient.rpc('get_my_mistake_questions'));
 
       if (mbErr) {
         container.innerHTML = '<div class="text-center p-8 text-rose-400">錯題本載入失敗：' + esc(mbErr.message) + '</div>';
         return;
       }
       container.innerHTML = '';
-      mistakeQuestions = data || [];
+      mistakeAll = data || [];
+      mistakeQuestions = mistakeAll.slice();
 
-      if (mistakeQuestions.length === 0) {
+      if (mistakeAll.length === 0) {
         container.innerHTML = `
           <div class="bg-slate-800 p-10 rounded-xl text-center border border-slate-700 shadow">
             <p class="text-emerald-400 font-bold text-lg mb-1">你的錯題本目前是空的</p>
@@ -1972,22 +1978,36 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         return;
       }
 
+      const srs = mistakeAll.some(q => q.due_at != null);
+      const due = mistakeAll.filter(isDue);
+      const head = !srs
+        ? `<h2 class="text-lg font-bold text-rose-400">待消滅錯題庫（共 ${mistakeAll.length} 題）</h2>
+           <p class="text-xs text-slate-300">重新答對即可自動從雲端錯題本消除。</p>`
+        : due.length
+          ? `<h2 class="text-lg font-bold text-rose-400">今天該複習 ${due.length} 題</h2>
+             <p class="text-xs text-slate-300">錯題本共 ${mistakeAll.length} 題。在不同天連續答對 3 次才會移出（隔 1 天、再隔 3 天）。</p>`
+          : `<h2 class="text-lg font-bold text-emerald-400">今天的複習都做完了</h2>
+             <p class="text-xs text-slate-300">錯題本還有 ${mistakeAll.length} 題，到了複習日會自動出現在這裡。</p>`;
+      const btn = !srs || due.length
+        ? `<button onclick="startMistakeReview(true)" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 rounded-lg font-bold text-sm text-white shadow">${srs ? '開始今天的複習' : '全部錯題特訓'}</button>`
+        : `<button onclick="startMistakeReview(false)" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold text-sm text-slate-200">提前練習（不算進度）</button>`;
       container.innerHTML = `
         <div class="flex flex-wrap justify-between items-center bg-rose-950/40 p-4 rounded-xl border border-rose-800/60 gap-2">
-          <div>
-            <h2 class="text-lg font-bold text-rose-400">待消滅錯題庫（共 ${mistakeQuestions.length} 題）</h2>
-            <p class="text-xs text-slate-300">重新答對即可自動從雲端錯題本消除。</p>
-          </div>
-          <button onclick="startMistakeTraining(0)" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 rounded-lg font-bold text-sm text-white shadow">全部錯題特訓</button>
+          <div>${head}</div>
+          ${btn}
         </div>
         <div id="mistake-items" class="space-y-3 mt-4"></div>
       `;
 
       const listEl = document.getElementById('mistake-items');
-      listEl.innerHTML = mistakeQuestions.map((q, idx) => `
+      listEl.innerHTML = mistakeAll.map((q, idx) => `
           <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-between items-center gap-4">
             <div class="w-full">
               <span class="text-xs px-2.5 py-0.5 bg-slate-700 text-cyan-300 rounded">${esc(q.subject)}</span>
+              ${!srs ? '' : isDue(q)
+                ? '<span class="ml-1 text-xs px-2.5 py-0.5 bg-rose-600 text-white rounded">今天複習</span>'
+                : `<span class="ml-1 text-xs px-2.5 py-0.5 bg-slate-700 text-slate-300 rounded">${dueText(q.due_at)}複習</span>`}
+              ${srs ? `<span class="ml-1 text-xs text-slate-400">進度 ${q.streak || 0}/3</span>` : ''}
               <div class="mt-2">${formatQuestionText(`${idx + 1}. ${q.question_text}`)}</div>
             </div>
             <button onclick="startMistakeTraining(${idx})" class="shrink-0 px-3 py-1.5 bg-slate-700 hover:bg-cyan-600 hover:text-white rounded-lg text-xs font-bold transition">重練</button>
@@ -1995,7 +2015,29 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         `).join('');
     }
 
-    function startMistakeTraining(startIndex = 0) {
+    // 間隔重複：due_at 到了才算進度；沒有 due_at 是舊版資料，一律當作到期
+    const isDue = q => !q.due_at || new Date(q.due_at) <= new Date();
+    const taipeiDate = d => new Date(d).toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' });
+    function dueText(due) {
+      const days = Math.round((Date.parse(taipeiDate(due)) - Date.parse(taipeiDate(Date.now()))) / 864e5);
+      return days <= 0 ? '今天' : days === 1 ? '明天' : `${days} 天後`;
+    }
+    function mistakeNote(isCorrect, m) {
+      if (!m) return null;
+      if (!isCorrect) return '已收進錯題本。要在不同天連續答對 3 次才會移出。';
+      if (m.counted && !m.in_book) return '連續 3 次答對，這題已經移出錯題本！';
+      if (m.counted) return `複習進度 ${m.streak}/3，${dueText(m.due_at)}再考你一次。`;
+      if (m.in_book) return '答對了！不過還沒到複習日，這次不算進度。';
+      return null;
+    }
+
+    function startMistakeReview(dueOnly) {
+      mistakeQuestions = dueOnly ? mistakeAll.filter(isDue) : mistakeAll.slice();
+      startMistakeTraining(0, true);
+    }
+
+    function startMistakeTraining(startIndex = 0, keepList = false) {
+      if (!keepList) mistakeQuestions = mistakeAll.slice();
       currentMode = 'mistake';
       currentMistakeIndex = startIndex;
       document.getElementById('tab-mistakes').classList.add('hidden');
@@ -2008,19 +2050,21 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     }
 
     // ==================== 排行榜 ====================
-    async function loadLeaderboard(sortBy = 'total') {
-      document.getElementById('btn-sort-total').className = sortBy === 'total' 
-        ? 'px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold transition'
-        : 'px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium transition';
-      document.getElementById('btn-sort-acc').className = sortBy === 'acc' 
-        ? 'px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold transition'
-        : 'px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium transition';
+    async function loadLeaderboard(sortBy = 'week') {
+      ['week', 'total', 'acc'].forEach(k => {
+        document.getElementById('btn-sort-' + k).className = sortBy === k
+          ? 'px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold transition'
+          : 'px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium transition';
+      });
 
       const tbody = document.getElementById('leaderboard-body');
       tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-slate-400">同步中...</td></tr>';
 
+      const week = sortBy === 'week';
       let query = supabaseClient.from('leaderboard_view').select('*');
-      if (sortBy === 'acc') {
+      if (week) {
+        query = query.gt('week_answered', 0).order('week_answered', { ascending: false }).order('week_accuracy_rate', { ascending: false });
+      } else if (sortBy === 'acc') {
         query = query.gte('total_answered', 20).order('accuracy_rate', { ascending: false }).order('total_answered', { ascending: false });
       } else {
         query = query.order('total_answered', { ascending: false }).order('accuracy_rate', { ascending: false });
@@ -2028,11 +2072,13 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
       const [{ data, error }, { data: me }] = await Promise.all([
         query.limit(30),
-        supabaseClient.from('leaderboard_view').select('rank_total, rank_acc').eq('is_me', true).maybeSingle()
+        supabaseClient.from('leaderboard_view').select(week ? 'rank_week' : 'rank_total, rank_acc').eq('is_me', true).maybeSingle()
       ]);
+      // 資料庫還沒加本週欄位時，退回累積榜
+      if (error && week) return loadLeaderboard('total');
       const note = document.getElementById('lb-note');
-      const rk = me ? (sortBy === 'acc' ? me.rank_acc : me.rank_total) : null;
-      note.innerText = '即時同步全站使用者的刷題數量與答題正確率（正確率榜需累積 20 題以上）' + (rk ? `｜你的名次：第 ${rk} 名` : '');
+      const rk = me ? (week ? me.rank_week : sortBy === 'acc' ? me.rank_acc : me.rank_total) : null;
+      note.innerText = (week ? '本週（週一到週日）的刷題量排名，每週一 00:00 重新開始' : '即時同步全站使用者的刷題數量與答題正確率（正確率榜需累積 20 題以上）') + (rk ? `｜你的名次：第 ${rk} 名` : '');
       if (error) {
         tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-rose-400">排行榜載入失敗：' + esc(error.message) + '</td></tr>';
         return;
@@ -2040,11 +2086,12 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       tbody.innerHTML = '';
 
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-slate-400">目前尚無排行資料</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-400">${week ? '這週還沒有人刷題，現在刷就是第一名！' : '目前尚無排行資料'}</td></tr>`;
         return;
       }
 
       tbody.innerHTML = data.map((row, index) => {
+        if (week) row = { ...row, correct_answered: row.week_correct, total_answered: row.week_answered, accuracy_rate: row.week_accuracy_rate };
         const isMe = !!row.is_me;
         const rowBg = isMe ? 'bg-cyan-950/50 border-l-4 border-cyan-400' : 'hover:bg-slate-700/40';
 
@@ -2713,7 +2760,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       } else if (tab === 'mistakes') {
         loadMistakeBook();
       } else if (tab === 'leaderboard') {
-        loadLeaderboard('total');
+        loadLeaderboard();
       } else if (tab === 'admin') {
         renderAdminTab();
       }
