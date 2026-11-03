@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#f7f1e4">
   <script>(function(){var g=function(k,d,ok){var v=null;try{v=localStorage.getItem(k)}catch(e){}return ok.indexOf(v)>-1?v:d},h=document.documentElement.dataset;h.theme=g("theme","light",["light","dark"]);h.palette=g("palette","cool",["warm","cool"])})()</script>
   <title>資訊科統測與乙級檢定刷題系統 | 共同科目、專一、專二、電腦硬體裝修乙級</title>
-  <link rel="icon" type="image/png" href="icons/icon-192.png"><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230a6aa8%22/><text x=%2250%22 y=%2268%22 font-family=%22monospace%22 font-weight=%22bold%22 font-size=%2252%22 fill=%22%23ffffff%22 text-anchor=%22middle%22>IT</text></svg>">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
   <style>
 :root{--nav-h:64px;--ink:42 35 27;--slate-50:31 25 19;--slate-100:42 35 27;--slate-200:56 47 37;--slate-300:80 70 58;--slate-400:107 95 80;--slate-500:156 142 120;--slate-600:208 195 165;--slate-700:229 218 193;--slate-800:255 253 248;--slate-900:247 241 228;--slate-950:241 232 212;--cyan-50:4 41 58;--cyan-100:6 55 73;--cyan-200:8 69 90;--cyan-300:10 86 111;--cyan-400:13 101 132;--cyan-500:23 128 159;--cyan-600:15 111 143;--cyan-700:12 92 119;--cyan-800:10 74 97;--cyan-900:10 66 88;--cyan-950:220 237 243;--amber-50:53 31 0;--amber-100:72 43 0;--amber-200:94 56 0;--amber-300:116 69 0;--amber-400:138 83 0;--amber-500:182 109 12;--amber-600:168 101 10;--amber-700:143 85 8;--amber-800:116 68 7;--amber-900:92 54 6;--amber-950:251 237 205;--emerald-50:5 42 27;--emerald-100:7 58 38;--emerald-200:10 74 49;--emerald-300:13 92 61;--emerald-400:17 112 74;--emerald-500:16 133 90;--emerald-600:15 122 82;--emerald-700:12 104 68;--emerald-800:10 85 56;--emerald-900:8 67 45;--emerald-950:220 243 229;--rose-50:79 14 26;--rose-100:106 19 35;--rose-200:130 24 42;--rose-300:154 29 49;--rose-400:180 35 58;--rose-500:209 59 82;--rose-600:190 47 69;--rose-700:168 38 59;--rose-800:143 31 51;--rose-900:122 26 43;--rose-950:251 227 230;}
 html[data-theme="dark"]{--ink:250 245 232;--slate-50:250 246 236;--slate-100:239 232 218;--slate-200:224 214 196;--slate-300:200 188 168;--slate-400:168 155 136;--slate-500:122 110 94;--slate-600:78 69 58;--slate-700:58 51 43;--slate-800:39 34 29;--slate-900:29 25 22;--slate-950:21 18 16;--cyan-50:238 249 252;--cyan-100:216 242 248;--cyan-200:182 230 242;--cyan-300:143 216 236;--cyan-400:92 195 223;--cyan-500:23 128 159;--cyan-600:15 111 143;--cyan-700:12 92 119;--cyan-800:10 74 97;--cyan-900:10 66 88;--cyan-950:12 45 57;--amber-50:255 248 232;--amber-100:253 240 210;--amber-200:251 226 172;--amber-300:247 208 130;--amber-400:242 188 79;--amber-500:182 109 12;--amber-600:168 101 10;--amber-700:143 85 8;--amber-800:116 68 7;--amber-900:92 54 6;--amber-950:46 34 10;--emerald-50:236 251 244;--emerald-100:214 247 232;--emerald-200:181 239 213;--emerald-300:143 229 191;--emerald-400:95 214 162;--emerald-500:16 133 90;--emerald-600:15 122 82;--emerald-700:12 104 68;--emerald-800:10 85 56;--emerald-900:8 67 45;--emerald-950:12 46 34;--rose-50:255 241 243;--rose-100:255 228 232;--rose-200:255 207 213;--rose-300:255 180 189;--rose-400:255 141 155;--rose-500:209 59 82;--rose-600:190 47 69;--rose-700:168 38 59;--rose-800:143 31 51;--rose-900:122 26 43;--rose-950:52 18 26;}
@@ -77,6 +77,28 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 .avatar img{width:100%;height:100%;object-fit:cover}
 .av-pick{border-radius:9999px;padding:2px;border:2px solid transparent}
 .av-pick[aria-pressed="true"]{border-color:rgb(var(--cyan-600))}
+/* 今日目標與各科表現 */
+.goal-bar{height:10px;border-radius:9999px;background:rgb(var(--slate-700));overflow:hidden}
+.goal-fill{height:100%;border-radius:inherit;background:rgb(var(--cyan-600));transition:width .4s ease}
+.goal-done .goal-fill{background:rgb(var(--emerald-600))}
+.goal-done #goal-count{color:rgb(var(--emerald-400))}
+.streak{display:inline-flex;align-items:center;gap:.2rem;font-size:.75rem;font-weight:700;padding:.2rem .6rem;border-radius:9999px;background:rgb(var(--amber-950));color:rgb(var(--amber-400));border:1px solid rgb(var(--amber-700))}
+.streak:empty{display:none}
+@media(prefers-reduced-motion:no-preference){.goal-pop{animation:pop .45s ease-out}}
+#subj-stats summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+#subj-stats summary::-webkit-details-marker{display:none}
+#subj-stats summary::after{content:"▾";color:rgb(var(--slate-400));transition:transform .15s}
+#subj-stats[open] summary::after{transform:rotate(180deg)}
+.subj-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:.35rem .6rem;padding:.55rem .65rem;border-radius:.6rem;background:rgb(var(--slate-900));border:1px solid rgb(var(--slate-700))}
+.subj-name{font-size:.875rem;font-weight:600;color:rgb(var(--slate-100));display:flex;align-items:center;gap:.35rem;min-width:0}
+.subj-num{font-size:.75rem;color:rgb(var(--slate-400));font-family:ui-monospace,monospace;white-space:nowrap}
+.subj-bar{grid-column:1/-1;order:1;height:6px;border-radius:9999px;background:rgb(var(--slate-700));overflow:hidden}
+.subj-bar>div{height:100%;border-radius:inherit}
+.acc-hi{background:rgb(var(--emerald-600))} .acc-mid{background:rgb(var(--amber-500))} .acc-lo{background:rgb(var(--rose-600))}
+.weak-tag{flex-shrink:0;font-size:.65rem;font-weight:700;padding:.05rem .45rem;border-radius:9999px;background:rgb(var(--rose-600));color:#fff}
+.subj-go{font-size:.75rem;font-weight:600;padding:.3rem .7rem;border-radius:9999px;background:rgb(var(--cyan-950));color:rgb(var(--cyan-400));border:1px solid rgb(var(--cyan-800));white-space:nowrap}
+.subj-go:hover{background:rgb(var(--cyan-600));color:#fff}
+@media(min-width:640px){.subj-row{grid-template-columns:10rem minmax(0,1fr) 7.5rem auto}.subj-bar{grid-column:auto;order:0}}
 </style>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script>
@@ -154,6 +176,32 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
     <!-- ==================== 1. 刷題練習區 ==================== -->
     <section id="tab-quiz" class="space-y-4">
+      <!-- 今日目標與各科表現（紀錄存在本機瀏覽器） -->
+      <div id="goal-card" class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <div class="flex items-baseline gap-2">
+            <span class="text-sm font-bold text-ink">今日目標</span>
+            <span id="goal-count" class="font-mono font-bold text-cyan-400"><span id="goal-done">0</span> / <span id="goal-target">20</span> 題</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="streak-badge" class="streak"></span>
+            <select id="goal-select" onchange="setDailyGoal(this.value)" aria-label="每日目標題數" class="bg-slate-900 text-slate-200 border border-slate-600 rounded-lg px-2 py-1 text-xs">
+              <option value="10">10 題/天</option>
+              <option value="20">20 題/天</option>
+              <option value="30">30 題/天</option>
+              <option value="50">50 題/天</option>
+            </select>
+          </div>
+        </div>
+        <div class="goal-bar"><div id="goal-fill" class="goal-fill" style="width:0"></div></div>
+        <p id="goal-hint" class="text-xs text-slate-400 mt-2"></p>
+        <details id="subj-stats" class="mt-3 border-t border-slate-700 pt-3">
+          <summary class="cursor-pointer"><span class="text-sm font-bold text-slate-200">各科表現 <span id="subj-weak-hint" class="text-xs font-normal text-slate-400"></span></span></summary>
+          <div id="subj-list" class="mt-3 space-y-2"></div>
+          <p class="text-[11px] text-slate-500 mt-2">刷題、錯題重練、模擬考都會算進來。紀錄存在這台裝置的瀏覽器，換裝置不會同步。</p>
+        </details>
+      </div>
+
       <div class="flex flex-wrap justify-between items-center bg-slate-800 p-3.5 rounded-xl border border-slate-700 gap-2">
         <div class="flex items-center gap-2">
           <label class="text-sm text-slate-300 font-medium">特訓科目：</label>
@@ -1390,6 +1438,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       if (currentMode === 'mistake' && isCorrect) {
         q._cleared = true;
       }
+      recordAnswers([[q.subject, isCorrect]]);
     }
 
     function nextQuestion() {
@@ -1410,6 +1459,114 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         currentQIndex = (currentQIndex + 1) % questions.length;
       }
       renderQuestion();
+    }
+
+    // ==================== 今日目標、連續天數與各科表現（存在本機） ====================
+    const STUDY_KEY = 'study_log_v1';
+    const WEAK_MIN = 5; // 一科至少做幾題才參與「最弱」判定
+    function loadStudy() {
+      const base = { goal: 20, days: {}, subj: {} };
+      try {
+        const s = JSON.parse(localStorage.getItem(STUDY_KEY));
+        if (s && typeof s === 'object') return { ...base, ...s };
+      } catch (e) {}
+      return base;
+    }
+    let study = loadStudy();
+    function saveStudy() { try { localStorage.setItem(STUDY_KEY, JSON.stringify(study)); } catch (e) {} }
+    const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    // rows: [[科目, 是否答對], ...]
+    function recordAnswers(rows) {
+      if (!rows.length) return;
+      const day = study.days[dayKey()] || (study.days[dayKey()] = { n: 0, met: false });
+      rows.forEach(([subject, ok]) => {
+        day.n += 1;
+        const s = study.subj[subject] || (study.subj[subject] = { t: 0, c: 0 });
+        s.t += 1;
+        if (ok) s.c += 1;
+      });
+      const justMet = !day.met && day.n >= study.goal;
+      if (justMet) day.met = true;
+      saveStudy();
+      renderStudy(justMet);
+    }
+
+    function setDailyGoal(v) {
+      study.goal = Number(v) || 20;
+      const day = study.days[dayKey()];
+      if (day && day.n >= study.goal) day.met = true; // 調高目標不會收回今天已達標的紀錄
+      saveStudy();
+      renderStudy(false);
+    }
+
+    function calcStreak() {
+      const d = new Date();
+      const todayMet = !!(study.days[dayKey(d)] || {}).met;
+      if (!todayMet) d.setDate(d.getDate() - 1);
+      let n = 0;
+      while ((study.days[dayKey(d)] || {}).met) { n += 1; d.setDate(d.getDate() - 1); }
+      return n;
+    }
+
+    function renderStudy(justMet) {
+      const day = study.days[dayKey()] || { n: 0, met: false };
+      const goal = study.goal;
+      const streak = calcStreak();
+      const card = document.getElementById('goal-card');
+      document.getElementById('goal-done').innerText = day.n;
+      document.getElementById('goal-target').innerText = goal;
+      document.getElementById('goal-select').value = String(goal);
+      document.getElementById('goal-fill').style.width = Math.min(100, day.n / goal * 100) + '%';
+      card.classList.toggle('goal-done', day.met);
+      document.getElementById('streak-badge').innerText = streak > 0 ? `🔥 連續 ${streak} 天` : '';
+      const left = goal - day.n;
+      document.getElementById('goal-hint').innerText = day.met
+        ? (justMet ? '🎉 今天達標了！明天繼續就能延長連續紀錄。' : '今天已經達標，想多刷也可以。')
+        : streak > 0 ? `再 ${left} 題就達標，連續紀錄會變成 ${streak + 1} 天。`
+        : day.n > 0 ? `再 ${left} 題就達標。` : `今天還沒開始，先刷 ${goal} 題吧。`;
+      if (justMet) {
+        card.classList.remove('goal-pop');
+        void card.offsetWidth;
+        card.classList.add('goal-pop');
+      }
+      renderSubjectStats();
+    }
+
+    function renderSubjectStats() {
+      const names = Array.from(document.getElementById('subject-filter').options).map(o => o.value).filter(v => v !== 'ALL');
+      Object.keys(study.subj).forEach(k => { if (!names.includes(k)) names.push(k); });
+      const rows = names.map(name => {
+        const s = study.subj[name] || { t: 0, c: 0 };
+        return { name, t: s.t, c: s.c, acc: s.t ? s.c / s.t * 100 : null };
+      });
+      const ranked = rows.filter(r => r.t >= WEAK_MIN).sort((a, b) => a.acc - b.acc);
+      const weak = ranked.length >= 2 ? ranked[0] : null;
+      rows.sort((a, b) => (a.acc === null) - (b.acc === null) || (a.acc ?? 0) - (b.acc ?? 0));
+
+      document.getElementById('subj-weak-hint').innerText = weak
+        ? `・最弱：${weak.name} ${Math.round(weak.acc)}%`
+        : `・每科做滿 ${WEAK_MIN} 題就會標出最弱科目`;
+      document.getElementById('subj-list').innerHTML = rows.map(r => {
+        const cls = r.acc === null ? '' : r.acc >= 80 ? 'acc-hi' : r.acc >= 60 ? 'acc-mid' : 'acc-lo';
+        const num = r.acc === null ? '還沒做' : `${Math.round(r.acc)}%・${r.c}/${r.t} 題`;
+        return `
+          <div class="subj-row">
+            <div class="subj-name"><span class="truncate">${esc(r.name)}</span>${weak && weak.name === r.name ? '<span class="weak-tag">最弱</span>' : ''}</div>
+            <div class="subj-bar"><div class="${cls}" style="width:${r.acc ?? 0}%"></div></div>
+            <div class="subj-num">${num}</div>
+            <button type="button" class="subj-go" data-subj="${esc(r.name)}" onclick="practiceSubject(this.dataset.subj)">練這科</button>
+          </div>`;
+      }).join('');
+    }
+
+    function practiceSubject(subject) {
+      const sel = document.getElementById('subject-filter');
+      if (!Array.from(sel.options).some(o => o.value === subject)) return;
+      sel.value = subject;
+      if (currentMode === 'mistake') { currentMode = 'normal'; sel.disabled = false; }
+      filterBySubject();
+      document.getElementById('q-text-container').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
     }
 
     // ==================== 必背公式字卡控制邏輯 ====================
@@ -1707,6 +1864,9 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       });
 
       reviewList.innerHTML = reviewHtml;
+      recordAnswers(examQuestions
+        .map((q, idx) => [q.subject, !!(resultMap.get(q.id) || {}).is_correct, examUserAnswers[idx]])
+        .filter(r => r[2] != null));
       const finalScore = Math.round((correctCount / total) * 100);
       document.getElementById('exam-score-number').innerText = `${finalScore} 分`;
       document.getElementById('exam-score-summary').innerText = `答對 ${correctCount} 題 / 共 ${total} 題（實際作答 ${answeredCount} 題已計入戰績，錯題已收錄至錯題本）`;
@@ -2497,6 +2657,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     function syncNavHeight() { document.documentElement.style.setProperty('--nav-h', document.querySelector('nav').offsetHeight + 'px'); }
     window.addEventListener('resize', syncNavHeight);
     syncNavHeight();
+    renderStudy(false);
     initApp().catch(e => showError('初始化失敗：' + e.message));
   </script>
   <!-- 配色選單 -->
