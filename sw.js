@@ -1,7 +1,7 @@
 // 統測刷題 Service Worker
 // 原則：批改、登入、頭像等 Supabase 請求一律走網路，絕不快取（避免舊答案、舊登入狀態）。
 // 網頁本體：有網路就拿最新版；沒網路才用上次存的版本。
-const VERSION = 'v3';                 // 改了圖示或這支檔案時，把 v1 改成 v2、v3…
+const VERSION = 'v4';                 // 改了圖示或這支檔案時，把 v1 改成 v2、v3…
 const SHELL = 'shell-' + VERSION;
 const RUNTIME = 'runtime-' + VERSION;
 const SHELL_FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
