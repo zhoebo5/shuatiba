@@ -113,16 +113,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 .subj-go:hover{background:rgb(var(--cyan-600));color:#fff}
 @media(min-width:640px){.subj-row{grid-template-columns:10rem minmax(0,1fr) 7.5rem auto}.subj-bar{grid-column:auto;order:0}}
 </style>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script>
-    const _sh=[50,100,200,300,400,500,600,700,800,900,950];
-    const _sc=n=>Object.fromEntries(_sh.map(k=>[k,`rgb(var(--${n}-${k}) / <alpha-value>)`]));
-    tailwind.config={theme:{extend:{
-      colors:{slate:_sc('slate'),cyan:_sc('cyan'),amber:_sc('amber'),emerald:_sc('emerald'),rose:_sc('rose'),ink:'rgb(var(--ink) / <alpha-value>)'},
-      fontFamily:{sans:['"Noto Sans TC"','"PingFang TC"','"Microsoft JhengHei"','system-ui','sans-serif']}
-    }}};
-  </script>
+  <!-- 預先產生的 Tailwind（改了 class 要重新產生，指令見 tools/tailwind.config.js） -->
+  <link rel="stylesheet" href="tailwind.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+  <script src="chapters.js"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans pb-28 md:pb-12">
 
@@ -210,6 +204,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         <p id="goal-hint" class="text-xs text-slate-400 mt-2"></p>
         <details id="subj-stats" class="mt-3 border-t border-slate-700 pt-3">
           <summary class="cursor-pointer"><span class="text-sm font-bold text-slate-200">各科表現 <span id="subj-weak-hint" class="text-xs font-normal text-slate-400"></span></span></summary>
+          <div id="chap-weak" class="mt-3"></div>
           <div id="subj-list" class="mt-3 space-y-2"></div>
           <p class="text-[11px] text-slate-500 mt-2">刷題、錯題重練、模擬考都會算進來。紀錄存在這台裝置的瀏覽器，換裝置不會同步。</p>
         </details>
@@ -230,6 +225,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
             <option value="微處理機">微處理機 (專二)</option>
             <option value="電腦硬體裝修乙級">電腦硬體裝修乙級</option>
           </select>
+        </div>
+        <div id="chapter-wrap" class="hidden flex items-center gap-2">
+          <label for="chapter-filter" class="text-sm text-slate-300 font-medium">章節：</label>
+          <select id="chapter-filter" onchange="filterBySubject(true)" class="bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:border-cyan-500"></select>
         </div>
         <div class="flex items-center gap-3">
           <span id="q-counter" class="text-xs text-slate-400 font-mono">題庫載入中...</span>
@@ -1337,12 +1336,27 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       filterFlashcards();
     }
 
-    function filterBySubject() {
+    const chapterOf = q => (window.CHAPTER_OF || {})[q.id] || '';
+
+    // 換科目時重建章節選單；keepChapter=true 表示只換章節，保留目前選的章節
+    function filterBySubject(keepChapter) {
       const selected = document.getElementById('subject-filter').value;
+      const chapSel = document.getElementById('chapter-filter');
+      const chapters = selected === 'ALL' ? [] : Object.keys((window.CHAPTERS || {})[selected] || {});
+      if (!keepChapter) {
+        const inSubject = allQuestions.filter(q => q.subject === selected);
+        chapSel.innerHTML = `<option value="ALL">全部章節</option>` + chapters.map(c => {
+          const n = inSubject.filter(q => chapterOf(q) === c).length;
+          return `<option value="${esc(c)}">${esc(c)}（${n}）</option>`;
+        }).join('');
+      }
+      document.getElementById('chapter-wrap').classList.toggle('hidden', chapters.length === 0);
+      const chap = chapters.length ? chapSel.value : 'ALL';
+
       if (selected === 'ALL') {
         questions = [...allQuestions];
       } else {
-        questions = allQuestions.filter(q => q.subject === selected);
+        questions = allQuestions.filter(q => q.subject === selected && (chap === 'ALL' || chapterOf(q) === chap));
       }
 
       for (let i = questions.length - 1; i > 0; i--) {
@@ -1373,7 +1387,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       const q = activeList[idx];
       isCheckingAnswer = false;
 
-      document.getElementById('q-subject').innerText = (currentMode === 'mistake') ? `[錯題重練] ${q.subject}` : q.subject;
+      const subjLabel = chapterOf(q) ? `${q.subject}・${chapterOf(q)}` : q.subject;
+      document.getElementById('q-subject').innerText = (currentMode === 'mistake') ? `[錯題重練] ${subjLabel}` : subjLabel;
       document.getElementById('q-source').innerHTML = sourceBadge(q);
       document.getElementById('btn-report-q').classList.remove('hidden');
       document.getElementById('q-text-container').innerHTML = formatQuestionText(`${idx + 1}. ${q.question_text}`);
@@ -1458,7 +1473,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       if (currentMode === 'mistake' && isCorrect) {
         q._cleared = true;
       }
-      recordAnswers([[q.subject, isCorrect]]);
+      recordAnswers([[q.subject, isCorrect, q.id]]);
     }
 
     function nextQuestion() {
@@ -1484,8 +1499,9 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     // ==================== 今日目標、連續天數與各科表現（存在本機） ====================
     const STUDY_KEY = 'study_log_v1';
     const WEAK_MIN = 5; // 一科至少做幾題才參與「最弱」判定
+    const CHAP_MIN = 3; // 一章至少做幾題才列入「最該加強的章節」
     function loadStudy() {
-      const base = { goal: 20, days: {}, subj: {} };
+      const base = { goal: 20, days: {}, subj: {}, chap: {} };
       try {
         const s = JSON.parse(localStorage.getItem(STUDY_KEY));
         if (s && typeof s === 'object') return { ...base, ...s };
@@ -1496,15 +1512,21 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     function saveStudy() { try { localStorage.setItem(STUDY_KEY, JSON.stringify(study)); } catch (e) {} }
     const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-    // rows: [[科目, 是否答對], ...]
+    // rows: [[科目, 是否答對, 題目 id], ...]
     function recordAnswers(rows) {
       if (!rows.length) return;
       const day = study.days[dayKey()] || (study.days[dayKey()] = { n: 0, met: false });
-      rows.forEach(([subject, ok]) => {
+      rows.forEach(([subject, ok, id]) => {
         day.n += 1;
         const s = study.subj[subject] || (study.subj[subject] = { t: 0, c: 0 });
         s.t += 1;
         if (ok) s.c += 1;
+        const chap = chapterOf({ id });
+        if (chap) {
+          const c = study.chap[`${subject}|${chap}`] || (study.chap[`${subject}|${chap}`] = { t: 0, c: 0 });
+          c.t += 1;
+          if (ok) c.c += 1;
+        }
       });
       const justMet = !day.met && day.n >= study.goal;
       if (justMet) day.met = true;
@@ -1578,14 +1600,35 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
             <button type="button" class="subj-go" data-subj="${esc(r.name)}" onclick="practiceSubject(this.dataset.subj)">練這科</button>
           </div>`;
       }).join('');
+
+      // 最該加強的章節：做滿 CHAP_MIN 題、正確率低於 80% 的章節，最弱的 3 個
+      const weakChaps = Object.entries(study.chap)
+        .map(([k, v]) => { const [subject, chap] = k.split('|'); return { subject, chap, t: v.t, c: v.c, acc: v.c / v.t * 100 }; })
+        .filter(r => r.t >= CHAP_MIN && r.acc < 80)
+        .sort((a, b) => a.acc - b.acc || b.t - a.t)
+        .slice(0, 3);
+      document.getElementById('chap-weak').innerHTML = weakChaps.length
+        ? `<p class="text-xs font-bold text-rose-400 mb-2">最該加強的章節</p><div class="space-y-2">` + weakChaps.map(r => `
+          <div class="subj-row">
+            <div class="subj-name"><span class="truncate">${esc(r.subject)}・${esc(r.chap)}</span></div>
+            <div class="subj-bar"><div class="${r.acc >= 60 ? 'acc-mid' : 'acc-lo'}" style="width:${r.acc}%"></div></div>
+            <div class="subj-num">${Math.round(r.acc)}%・${r.c}/${r.t} 題</div>
+            <button type="button" class="subj-go" data-subj="${esc(r.subject)}" data-chap="${esc(r.chap)}" onclick="practiceSubject(this.dataset.subj, this.dataset.chap)">練這章</button>
+          </div>`).join('') + '</div>'
+        : `<p class="text-xs text-slate-400">每章做滿 ${CHAP_MIN} 題後，這裡會列出最該加強的章節。</p>`;
     }
 
-    function practiceSubject(subject) {
+    function practiceSubject(subject, chapter) {
       const sel = document.getElementById('subject-filter');
+      const chapSel = document.getElementById('chapter-filter');
       if (!Array.from(sel.options).some(o => o.value === subject)) return;
       sel.value = subject;
-      if (currentMode === 'mistake') { currentMode = 'normal'; sel.disabled = false; }
+      if (currentMode === 'mistake') { currentMode = 'normal'; sel.disabled = false; chapSel.disabled = false; }
       filterBySubject();
+      if (chapter && Array.from(chapSel.options).some(o => o.value === chapter)) {
+        chapSel.value = chapter;
+        filterBySubject(true);
+      }
       document.getElementById('q-text-container').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
     }
 
@@ -1868,7 +1911,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         reviewHtml += `
           <div class="review-card ${isCorrect ? 'is-correct' : 'is-wrong'} p-4 rounded-xl bg-slate-900 border border-slate-700 space-y-2">
             <div class="flex justify-between items-center">
-              <span class="text-xs px-2 py-0.5 bg-slate-800 text-cyan-300 rounded">${esc(q.subject)}</span>
+              <span class="text-xs px-2 py-0.5 bg-slate-800 text-cyan-300 rounded">${esc(q.subject)}${chapterOf(q) ? '・' + esc(chapterOf(q)) : ''}</span>
               <span class="flex items-center gap-2"><span class="${isCorrect ? 'pill-ok' : 'pill-bad'}">${isCorrect ? '✓ 答對' : '✕ 答錯・已加入錯題本'}</span><button type="button" onclick="openReportModal('exam', ${idx})" class="report-btn">⚑ 回報有誤</button></span>
             </div>
             <div class="font-medium text-ink text-sm">${formatQuestionText(`${idx + 1}. ${q.question_text}`)}</div>
@@ -1885,8 +1928,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
       reviewList.innerHTML = reviewHtml;
       recordAnswers(examQuestions
-        .map((q, idx) => [q.subject, !!(resultMap.get(q.id) || {}).is_correct, examUserAnswers[idx]])
-        .filter(r => r[2] != null));
+        .map((q, idx) => [q.subject, !!(resultMap.get(q.id) || {}).is_correct, q.id, examUserAnswers[idx]])
+        .filter(r => r[3] != null));
       const finalScore = Math.round((correctCount / total) * 100);
       document.getElementById('exam-score-number').innerText = `${finalScore} 分`;
       document.getElementById('exam-score-summary').innerText = `答對 ${correctCount} 題 / 共 ${total} 題（實際作答 ${answeredCount} 題已計入戰績，錯題已收錄至錯題本）`;
@@ -1957,6 +2000,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('tab-mistakes').classList.add('hidden');
       document.getElementById('tab-quiz').classList.remove('hidden');
       document.getElementById('subject-filter').disabled = true;
+      document.getElementById('chapter-filter').disabled = true;
       setNavActive('quiz');
       document.getElementById('q-counter').innerText = `錯題重練 (共 ${mistakeQuestions.length} 題)`;
       renderQuestion();
@@ -2658,7 +2702,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         const wasMistake = currentMode === 'mistake';
         currentMode = 'normal';
         document.getElementById('subject-filter').disabled = false;
-        if (wasMistake || questions.length === 0) filterBySubject();
+        document.getElementById('chapter-filter').disabled = false;
+        if (wasMistake || questions.length === 0) filterBySubject(true);
         else { document.getElementById('q-counter').innerText = `本區共 ${questions.length} 題`; renderQuestion(); }
       } else if (tab === 'exam') {
         resetExamLobby();
