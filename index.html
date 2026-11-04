@@ -1163,7 +1163,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     // ==================== 統測歷屆 ====================
     const PAPER_ORDER = ['國文', '英文', '數學(C)', '專業科目(一)', '專業科目(二)'];
     // 只收選擇題的試卷，沒收的部分是什麼（模擬考說明用）
-    const NON_MC = { '國文': '寫作測驗（作文）', '英文': '填充、句子重組、中譯英' };
+    const NON_MC = { '國文': '作文', '英文': '填充、句子重組、中譯英' };
     // 原試卷有非選擇題（英文 16 分）時，這裡只收選擇題，滿分會小於 100
     const paperFull = p => pastQuestions.filter(q => q.year === p.year && q.paper === p.paper && q.track === p.track).length * Number(p.points_per_q);
     function renderPastList() {
