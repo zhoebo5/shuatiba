@@ -184,6 +184,18 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
     <!-- ==================== 1. 刷題練習區 ==================== -->
     <section id="tab-quiz" class="space-y-4">
+      <!-- 今日任務：每天自動排一組題目（到期錯題＋弱點章節＋新題），同一天重新整理不會換 -->
+      <div id="task-card" class="hidden bg-slate-800 p-4 rounded-xl border border-cyan-800">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-sm font-bold text-ink">今日任務 <span id="task-progress" class="ml-1 font-mono text-cyan-400"></span></p>
+            <p id="task-desc" class="text-xs text-slate-400 mt-0.5"></p>
+          </div>
+          <button id="task-btn" type="button" onclick="startTask()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg font-bold text-sm text-white shadow transition">開始今日任務</button>
+        </div>
+        <div class="goal-bar mt-3"><div id="task-fill" class="goal-fill" style="width:0"></div></div>
+      </div>
+
       <!-- 今日目標與各科表現（紀錄存在本機瀏覽器） -->
       <div id="goal-card" class="bg-slate-800 p-4 rounded-xl border border-slate-700">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
@@ -213,6 +225,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
       <div class="flex flex-wrap justify-between items-center bg-slate-800 p-3.5 rounded-xl border border-slate-700 gap-2">
         <button id="past-back" onclick="switchTab('past')" class="hidden text-sm px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 font-medium transition">← 回歷屆列表</button>
+        <button id="task-exit" onclick="exitTask()" class="hidden text-sm px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 font-medium transition">← 離開今日任務</button>
         <div id="subject-wrap" class="flex flex-wrap items-center gap-2">
           <label class="text-sm text-slate-300 font-medium">特訓科目：</label>
           <select id="subject-filter" onchange="filterBySubject()" class="bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:border-cyan-500">
@@ -1070,6 +1083,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     async function initApp() {
       await initUserSession();
       await Promise.all([fetchAllPublicQuestions(), fetchAllFlashcards(), pullStudy()]);
+      buildTask().catch(() => {}); // 要等題庫和雲端學習紀錄（弱點章節）都到了才排
     }
 
     async function fetchAllPublicQuestions() {
@@ -1206,6 +1220,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('subject-wrap').classList.add('hidden');
       document.getElementById('chapter-wrap').classList.add('hidden');
       document.getElementById('past-back').classList.remove('hidden');
+      document.getElementById('task-exit').classList.add('hidden');
       document.getElementById('q-counter').innerText = `${year} 統測・${paper}（共 ${questions.length} 題）`;
       window.scrollTo({ top: 0 });
       renderQuestion();
@@ -1242,6 +1257,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('chapter-wrap').classList.toggle('hidden', chapters.length === 0);
       document.getElementById('subject-wrap').classList.remove('hidden');
       document.getElementById('past-back').classList.add('hidden');
+      document.getElementById('task-exit').classList.add('hidden');
       const chap = chapters.length ? chapSel.value : 'ALL';
 
       if (selected === 'ALL') {
@@ -1276,13 +1292,15 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     function renderQuestion() {
       const activeList = (currentMode === 'mistake') ? mistakeQuestions : questions;
       const idx = (currentMode === 'mistake') ? currentMistakeIndex : currentQIndex;
-      
+      renderTask(); // 換模式都會經過這裡，順便更新任務卡的按鈕
+
       if (!activeList || activeList.length === 0) return;
       const q = activeList[idx];
       isCheckingAnswer = false;
 
       const subjLabel = chapterOf(q) ? `${q.subject}・${chapterOf(q)}` : q.subject;
-      document.getElementById('q-subject').innerText = (currentMode === 'mistake') ? `[錯題重練] ${subjLabel}` : subjLabel;
+      document.getElementById('q-subject').innerText = currentMode === 'mistake' ? `[錯題重練] ${subjLabel}`
+        : currentMode === 'task' ? `[今日任務${isTaskReview(q) ? '・複習' : ''}] ${subjLabel}` : subjLabel;
       document.getElementById('q-source').innerHTML = sourceBadge(q);
       document.getElementById('btn-report-q').classList.remove('hidden');
       document.getElementById('q-text-container').innerHTML = questionHTML(q, currentMode === 'past' ? q.number : idx + 1);
@@ -1315,10 +1333,12 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         buttons[i].disabled = true;
       }
 
+      // 今日任務裡的錯題複習跟錯題重練一樣，不算進總刷題數
+      const reviewing = currentMode === 'mistake' || (currentMode === 'task' && isTaskReview(q));
       const { data: gradeResult, error } = await supabaseClient.rpc('submit_single_answer', {
         p_question_id: q.id,
         p_selected_option: selectedIndex,
-        p_is_mistake_mode: (currentMode === 'mistake')
+        p_is_mistake_mode: reviewing
       });
 
       if (error || !gradeResult) {
@@ -1361,7 +1381,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       expBox.classList.remove('hidden');
       expBox.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
 
-      if (currentUser && currentMode !== 'mistake') {
+      if (currentUser && !reviewing) {
         currentUser.total_answered += 1;
         if (isCorrect) currentUser.correct_answered += 1;
         updateUserHeaderUI();
@@ -1370,6 +1390,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       if (currentMode === 'mistake' && isCorrect) {
         q._cleared = true;
       }
+      if (currentMode === 'task') markTaskDone(q.id);
       recordAnswers([[q.subject, isCorrect, q.id]]);
     }
 
@@ -1386,6 +1407,11 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         currentMistakeIndex = pos === -1 ? currentMistakeIndex % keep.length : (pos + 1) % keep.length;
         mistakeQuestions = keep;
         document.getElementById('q-counter').innerText = `錯題重練（剩 ${keep.length} 題）`;
+      } else if (currentMode === 'task') {
+        // 跳過的題目會繞回來再出，全部做完才結束
+        if (questions.every(x => task.done.includes(x.id))) { finishTask(); return; }
+        do { currentQIndex = (currentQIndex + 1) % questions.length; } while (task.done.includes(questions[currentQIndex].id));
+        updateTaskCounter();
       } else {
         if (questions.length === 0) return;
         currentQIndex = (currentQIndex + 1) % questions.length;
@@ -1553,12 +1579,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
           </div>`;
       }).join('');
 
-      // 最該加強的章節：做滿 CHAP_MIN 題、正確率低於 80% 的章節，最弱的 3 個
-      const weakChaps = Object.entries(study.chap)
-        .map(([k, v]) => { const [subject, chap] = k.split('|'); return { subject, chap, t: v.t, c: v.c, acc: v.c / v.t * 100 }; })
-        .filter(r => r.t >= CHAP_MIN && r.acc < 80)
-        .sort((a, b) => a.acc - b.acc || b.t - a.t)
-        .slice(0, 3);
+      const weakChaps = weakChapters().slice(0, 3);
       document.getElementById('chap-weak').innerHTML = weakChaps.length
         ? `<p class="text-xs font-bold text-rose-400 mb-2">最該加強的章節</p><div class="space-y-2">` + weakChaps.map(r => `
           <div class="subj-row">
@@ -1568,6 +1589,14 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
             <button type="button" class="subj-go" data-subj="${esc(r.subject)}" data-chap="${esc(r.chap)}" onclick="practiceSubject(this.dataset.subj, this.dataset.chap)">練這章</button>
           </div>`).join('') + '</div>'
         : `<p class="text-xs text-slate-400">每章做滿 ${CHAP_MIN} 題後，這裡會列出最該加強的章節。</p>`;
+    }
+
+    // 最該加強的章節：做滿 CHAP_MIN 題、正確率低於 80%，由弱到強
+    function weakChapters() {
+      return Object.entries(study.chap)
+        .map(([k, v]) => { const [subject, chap] = k.split('|'); return { subject, chap, t: v.t, c: v.c, acc: v.c / v.t * 100 }; })
+        .filter(r => r.t >= CHAP_MIN && r.acc < 80)
+        .sort((a, b) => a.acc - b.acc || b.t - a.t);
     }
 
     function practiceSubject(subject, chapter) {
@@ -1585,6 +1614,141 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         filterBySubject(true);
       }
       document.getElementById('q-text-container').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+    }
+
+    // ==================== 今日任務（存在本機，每天換一組） ====================
+    // 組成：到期的錯題（最多 4 題）→ 最弱 2 章的題目（最多 3 題）→ 其餘補新題，共 10 題
+    const TASK_KEY = 'daily_task_v1';
+    const TASK_N = 10, TASK_REVIEW_MAX = 4, TASK_WEAK_MAX = 3, TASK_SEEN_MAX = 800;
+    // 新題只從統測數學與專業科目挑，乙級證照題不排進來
+    const TASK_SUBJECTS = ['數學', '基本電學', '電子學', '數位邏輯設計', '程式設計實習', '微處理機'];
+    let task = null; // { day, uid, ids, review, weak, done, seen }
+    const isTaskReview = q => !!task && task.review.includes(q.id);
+
+    // 用「日期＋帳號」當亂數種子，同一天重新整理排出來的題目一樣
+    function seededRandom(seed) {
+      let a = 2166136261;
+      for (let i = 0; i < seed.length; i++) a = Math.imul(a ^ seed.charCodeAt(i), 16777619);
+      return () => {
+        a = (a + 0x6D2B79F5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+    function shuffled(list, rnd) {
+      const a = [...list];
+      for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+      return a;
+    }
+    function saveTask() { try { localStorage.setItem(TASK_KEY, JSON.stringify(task)); } catch (e) {} }
+
+    async function buildTask() {
+      if (!currentUser || !questionById.size) return;
+      const today = dayKey();
+      let old = {};
+      try { old = JSON.parse(localStorage.getItem(TASK_KEY)) || {}; } catch (e) {}
+      if (old.uid !== currentUser.id) old = {};
+      if (old.day === today && Array.isArray(old.ids) && old.ids.length && old.ids.every(id => questionById.has(id))) {
+        task = old;
+        renderTask();
+        return;
+      }
+      const rnd = seededRandom(today + currentUser.id);
+      const seen = new Set(old.seen || []);
+      // 錯題本函式失敗（例如還沒登入完成）就只排弱點與新題
+      const { data: book } = await supabaseClient.rpc('get_my_mistakes_v2');
+      const inBook = new Set((book || []).map(q => q.id));
+      const review = shuffled((book || []).filter(q => isDue(q) && questionById.has(q.id)).map(q => q.id), rnd).slice(0, TASK_REVIEW_MAX);
+      const picked = new Set(review);
+      // 沒排過的題目優先，排過的放後面
+      const fresh = list => { const s = shuffled(list, rnd).filter(q => !picked.has(q.id) && !inBook.has(q.id)); return s.filter(q => !seen.has(q.id)).concat(s.filter(q => seen.has(q.id))); };
+      const all = allQuestions.concat(pastQuestions);
+
+      const weakKeys = weakChapters().slice(0, 2).map(r => `${r.subject}|${r.chap}`);
+      const weak = fresh(all.filter(q => weakKeys.includes(`${q.subject}|${chapterOf(q)}`)))
+        .slice(0, Math.min(TASK_WEAK_MAX, TASK_N - review.length)).map(q => q.id);
+      weak.forEach(id => picked.add(id));
+
+      // 新題各科輪流挑，不會整組都是同一科
+      const bySubject = shuffled(TASK_SUBJECTS, rnd).map(s => fresh(all.filter(q => q.subject === s)));
+      const extra = [];
+      for (let i = 0; extra.length < TASK_N - review.length - weak.length && bySubject.some(l => l.length > i); i++) {
+        bySubject.forEach(l => { if (l[i] && extra.length < TASK_N - review.length - weak.length) extra.push(l[i].id); });
+      }
+      const ids = [...review, ...weak, ...extra];
+      task = { day: today, uid: currentUser.id, ids, review, weak, weakLabel: weakKeys.map(k => k.replace('|', '・')), done: [],
+        seen: [...(old.seen || []), ...ids].slice(-TASK_SEEN_MAX) };
+      saveTask();
+      renderTask();
+    }
+
+    function renderTask() {
+      const card = document.getElementById('task-card');
+      if (!task || !task.ids.length) { card.classList.add('hidden'); return; }
+      const n = task.ids.length, done = task.done.length, finished = done >= n;
+      const r = task.review.length, w = task.weak.length;
+      card.classList.remove('hidden');
+      card.classList.toggle('goal-done', finished);
+      document.getElementById('task-progress').innerText = `${done} / ${n} 題`;
+      document.getElementById('task-fill').style.width = done / n * 100 + '%';
+      const parts = [r && `${r} 題錯題複習`, w && `${w} 題弱點章節（${task.weakLabel.join('、')}）`, n - r - w && `${n - r - w} 題數學與專業科目`].filter(Boolean);
+      document.getElementById('task-desc').innerText = finished
+        ? '今天的任務完成了！明天會再排新的一組，想多刷可以用下面的特訓科目。'
+        : `幫你排好了：${parts.join('、')}。`;
+      const btn = document.getElementById('task-btn');
+      btn.classList.toggle('hidden', finished || currentMode === 'task');
+      btn.innerText = done ? `繼續（剩 ${n - done} 題）` : '開始今日任務';
+    }
+
+    function startTask() {
+      if (!task) return;
+      // 從第一題沒做的開始；做過的保留在清單裡，讓題號跟任務進度對得上
+      questions = task.ids.map(id => questionById.get(id)).filter(Boolean);
+      const first = questions.findIndex(q => !task.done.includes(q.id));
+      if (first === -1) return;
+      currentMode = 'task';
+      currentQIndex = first;
+      ['subject-filter', 'chapter-filter', 'source-filter'].forEach(id => { document.getElementById(id).disabled = false; });
+      document.getElementById('subject-wrap').classList.add('hidden');
+      document.getElementById('chapter-wrap').classList.add('hidden');
+      document.getElementById('past-back').classList.add('hidden');
+      document.getElementById('task-exit').classList.remove('hidden');
+      updateTaskCounter();
+      renderTask();
+      renderQuestion();
+      document.getElementById('q-text-container').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+    }
+
+    function updateTaskCounter() {
+      document.getElementById('q-counter').innerText = `今日任務・第 ${currentQIndex + 1} / ${questions.length} 題`;
+    }
+
+    function markTaskDone(id) {
+      if (!task || task.done.includes(id)) return;
+      task.done.push(id);
+      saveTask();
+      renderTask();
+    }
+
+    function finishTask() {
+      document.getElementById('q-subject').innerText = '今日任務';
+      document.getElementById('q-source').innerHTML = '';
+      document.getElementById('btn-report-q').classList.add('hidden');
+      document.getElementById('q-counter').innerText = '今日任務完成';
+      document.getElementById('q-options').innerHTML = '';
+      document.getElementById('q-explanation-box').classList.add('hidden');
+      document.getElementById('q-text-container').innerHTML = `
+        <h2 class="text-lg font-bold text-emerald-400">🎉 今日任務完成！</h2>
+        <p class="text-sm text-slate-400 mt-2">${task.review.length ? '錯題複習的進度已經記進錯題本。' : ''}答錯的題目會收進錯題本，之後的今日任務會再排給你複習。</p>
+        <button type="button" onclick="exitTask()" class="mt-4 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg font-bold text-sm text-white shadow transition">繼續自由刷題</button>`;
+      document.getElementById('task-card').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    }
+
+    function exitTask() {
+      currentMode = 'normal';
+      renderTask();
+      filterBySubject(true);
     }
 
     // ==================== 必背公式字卡控制邏輯 ====================
@@ -2110,6 +2274,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('source-filter').disabled = true;
       document.getElementById('subject-wrap').classList.remove('hidden');
       document.getElementById('past-back').classList.add('hidden');
+      document.getElementById('task-exit').classList.add('hidden');
       setNavActive('quiz');
       document.getElementById('q-counter').innerText = `錯題重練 (共 ${mistakeQuestions.length} 題)`;
       renderQuestion();
@@ -2228,7 +2393,11 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       setNavActive(tab);
       window.scrollTo({ top: 0 });
 
-      if (tab === 'quiz') {
+      // 今日任務做到一半切到別頁再回來，接著同一題做
+      if (tab === 'quiz' && currentMode === 'task') {
+        // 目前這題已經答過就往下一題，不然重畫後可以再答一次
+        if (task.done.includes(questions[currentQIndex].id)) nextQuestion(); else { updateTaskCounter(); renderQuestion(); }
+      } else if (tab === 'quiz') {
         const wasOther = currentMode !== 'normal';
         currentMode = 'normal';
         document.getElementById('subject-filter').disabled = false;
