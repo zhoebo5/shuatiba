@@ -293,7 +293,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       <div id="exam-lobby" class="bg-slate-800 p-8 rounded-2xl border border-slate-700 text-center shadow-lg">
         <h2 class="text-2xl font-bold text-ink mb-2">統測與乙檢實戰模擬考模式</h2>
         <p class="text-slate-400 text-sm max-w-md mx-auto mb-6">
-          隨機從題庫抽取 <strong class="text-cyan-400">25 題</strong>（若單科題庫未滿 25 題則全數出題），限時 <strong class="text-amber-400">50 分鐘</strong>。作答期間不顯示答案，交卷時由雲端伺服器統一批改計分並將錯題收錄至錯題本。
+          從自編題和統測歷屆題隨機抽 <strong class="text-cyan-400">25 題</strong>（若單科題庫未滿 25 題則全數出題），限時 <strong class="text-amber-400">50 分鐘</strong>。作答期間不顯示答案，交卷時由雲端伺服器統一批改計分並將錯題收錄至錯題本。
         </p>
         
         <div class="max-w-xs mx-auto mb-6 text-left">
@@ -1094,7 +1094,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         document.getElementById('q-counter').innerText = '載入失敗';
         return;
       }
-      // 有年度的是歷屆試題，只出現在「歷屆」；刷題區和模擬考只用自編題
+      // 有年度的是歷屆試題；刷題區、隨機模擬考都可以混用兩種題目
       allQuestions = data.filter(q => q.year == null);
       pastQuestions = data.filter(q => q.year != null);
       questionById = new Map(data.map(q => [q.id, q]));
@@ -1140,10 +1140,21 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     function formatRich(text) {
       return String(text || '').split('```').map((part, i) => {
         if (i % 2 === 1) return `<pre class="bg-slate-950 p-3 my-3 rounded-xl border border-slate-700 font-mono text-xs sm:text-sm text-cyan-300 overflow-x-auto leading-relaxed">${esc(part.replace(/^\n+|\n+$/g, ''))}</pre>`;
+        // 長篇短文（閱讀測驗）用一般字級，比較好讀
         const t = part.trim();
-        return t ? `<p class="text-lg font-medium leading-relaxed text-ink my-2">${esc(t).replace(/\n/g, '<br>')}</p>` : '';
+        const size = t.length > 300 ? 'text-base' : 'text-lg font-medium';
+        return t ? `<p class="${size} leading-relaxed text-ink my-2">${esc(t).replace(/\n/g, '<br>')}</p>` : '';
       }).join('');
     }
+    // 錯題本列表：題組（例如英文閱讀測驗）只留標題和最後的問句，整篇短文等按「重練」再看
+    function mistakePreview(q, num) {
+      const text = String(q.question_text || '');
+      if (q.year == null || text.includes('```') || !text.includes('\n\n')) return questionHTML(q, num, true);
+      const parts = text.split('\n\n');
+      return formatRich(`${num}. ${parts[0].split('\n')[0]}（短文略，按「重練」看全文）\n${parts[parts.length - 1]}`);
+    }
+    // 英文、國文選項是一般句子，不用等寬字；其他科的選項常有數字、程式碼，維持等寬
+    const optFont = q => ['英文', '國文'].includes(q.subject) ? 'text-sm' : 'font-mono text-sm';
     function questionHTML(q, num, noImage) {
       if (q.year == null) return formatQuestionText(`${num}. ${q.question_text}`);
       return formatRich(`${num}. ${q.question_text}`) + (noImage ? '' : questionImage(q));
@@ -1175,9 +1186,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         p.subjects.add(q.subject);
       });
       const years = [...new Set([...papers.values()].map(p => p.year))].sort((a, b) => b - a);
-      box.innerHTML = years.map(y => `
-        <div>
-          <h3 class="text-sm font-bold text-slate-300 mb-2">${y} 年統測</h3>
+      // 依年度收合，只展開最新一年，手機不用滑過十幾張卡片
+      box.innerHTML = years.map((y, i) => `
+        <details ${i === 0 ? 'open' : ''}>
+          <summary class="cursor-pointer text-sm font-bold text-slate-300 mb-2 py-1">${y} 年統測 <span class="text-xs font-normal text-slate-400">・${[...papers.values()].filter(p => p.year === y).length} 份試卷</span></summary>
           <div class="grid gap-3 sm:grid-cols-2">
             ${[...papers.values()].filter(p => p.year === y)
               .sort((a, b) => PAPER_ORDER.indexOf(a.paper) - PAPER_ORDER.indexOf(b.paper))
@@ -1195,7 +1207,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
                 </div>
               </div>`).join('')}
           </div>
-        </div>`).join('');
+        </details>`).join('');
       showPastAttempts();
     }
 
@@ -1315,7 +1327,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
       parsedOptions.forEach((opt, optIdx) => {
         const btn = document.createElement('button');
-        btn.className = 'opt font-mono text-sm';
+        btn.className = `opt ${optFont(q)}`;
         btn.innerText = opt;
         btn.onclick = () => checkAnswer(optIdx);
         optionsBox.appendChild(btn);
@@ -1357,7 +1369,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       for (let i = 0; i < buttons.length; i++) {
         const b = buttons[i];
         const mark = (cls, label) => {
-          b.className = `opt ${cls} font-mono text-sm`;
+          b.className = `opt ${cls} ${optFont(q)}`;
           const tag = document.createElement('span');
           tag.className = 'opt-badge';
           tag.textContent = label;
@@ -1367,7 +1379,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         if (i === selectedIndex && isCorrect) mark('opt-correct', '✓ 你答對了');
         else if (i === correctOption) mark('opt-correct', isCorrect ? '✓ 也是正解' : '✓ 正確答案');
         else if (i === selectedIndex && !isCorrect) mark('opt-wrong', '✕ 你的答案');
-        else b.className = 'opt opt-dim font-mono text-sm';
+        else b.className = `opt opt-dim ${optFont(q)}`;
       }
 
       const expBox = document.getElementById('q-explanation-box');
@@ -1953,7 +1965,9 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
     function startExam() {
       const subject = document.getElementById('exam-subject-select').value;
-      let pool = (subject === 'ALL') ? [...allQuestions] : allQuestions.filter(q => q.subject === subject);
+      // 自編題和統測歷屆題一起抽，題量比較多、也比較接近真實考題
+      const all = allQuestions.concat(pastQuestions);
+      let pool = (subject === 'ALL') ? all : all.filter(q => q.subject === subject);
 
       if (pool.length === 0) {
         alert('該科目目前沒有題目！');
@@ -2018,7 +2032,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       parsedOptions.forEach((opt, optIdx) => {
         const isSelected = (examUserAnswers[currentExamIndex] === optIdx);
         const btn = document.createElement('button');
-        btn.className = isSelected ? 'opt opt-selected font-mono text-sm' : 'opt font-mono text-sm';
+        btn.className = `opt${isSelected ? ' opt-selected' : ''} ${optFont(q)}`;
         btn.innerText = opt;
         if (isSelected) { const tag = document.createElement('span'); tag.className = 'opt-badge'; tag.textContent = '✓ 已選'; btn.appendChild(tag); }
         btn.onclick = () => selectExamOption(optIdx);
@@ -2246,7 +2260,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
                 ? '<span class="ml-1 text-xs px-2.5 py-0.5 bg-rose-600 text-white rounded">今天複習</span>'
                 : `<span class="ml-1 text-xs px-2.5 py-0.5 bg-slate-700 text-slate-300 rounded">${dueText(q.due_at)}複習</span>`}
               ${srs ? `<span class="ml-1 text-xs text-slate-400">進度 ${q.streak || 0}/3</span>` : ''}
-              <div class="mt-2">${questionHTML(q, idx + 1, true)}</div>
+              <div class="mt-2">${mistakePreview(q, idx + 1)}</div>
             </div>
             <button onclick="startMistakeTraining(${idx})" class="shrink-0 px-3 py-1.5 bg-slate-700 hover:bg-cyan-600 hover:text-white rounded-lg text-xs font-bold transition">重練</button>
           </div>
