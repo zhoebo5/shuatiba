@@ -207,13 +207,13 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
           <summary class="cursor-pointer"><span class="text-sm font-bold text-slate-200">各科表現 <span id="subj-weak-hint" class="text-xs font-normal text-slate-400"></span></span></summary>
           <div id="chap-weak" class="mt-3"></div>
           <div id="subj-list" class="mt-3 space-y-2"></div>
-          <p class="text-[11px] text-slate-500 mt-2">刷題、錯題重練、模擬考都會算進來。紀錄存在這台裝置的瀏覽器，換裝置不會同步。</p>
+          <p class="text-[11px] text-slate-500 mt-2">刷題、錯題重練、模擬考、統測歷屆都會算進來。登入後紀錄會同步到雲端，換裝置也接得上。</p>
         </details>
       </div>
 
       <div class="flex flex-wrap justify-between items-center bg-slate-800 p-3.5 rounded-xl border border-slate-700 gap-2">
         <button id="past-back" onclick="switchTab('past')" class="hidden text-sm px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 font-medium transition">← 回歷屆列表</button>
-        <div id="subject-wrap" class="flex items-center gap-2">
+        <div id="subject-wrap" class="flex flex-wrap items-center gap-2">
           <label class="text-sm text-slate-300 font-medium">特訓科目：</label>
           <select id="subject-filter" onchange="filterBySubject()" class="bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:border-cyan-500">
             <option value="ALL">全部科目隨機混刷</option>
@@ -226,6 +226,11 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
             <option value="程式設計實習">程式設計實習 (專二)</option>
             <option value="微處理機">微處理機 (專二)</option>
             <option value="電腦硬體裝修乙級">電腦硬體裝修乙級</option>
+          </select>
+          <select id="source-filter" onchange="filterBySubject(true, true)" aria-label="題目來源" class="bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:border-cyan-500">
+            <option value="all">自編＋歷屆</option>
+            <option value="self">只刷自編題</option>
+            <option value="past">只刷統測歷屆</option>
           </select>
         </div>
         <div id="chapter-wrap" class="hidden flex items-center gap-2">
@@ -448,6 +453,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
         <h2 class="text-lg font-bold text-cyan-300">統測歷屆試題</h2>
         <p class="text-xs text-slate-400 mt-1">題目取自技專校院入學測驗中心公告的歷屆試題，答案依官方公布；詳解由本站自行撰寫，若有錯誤歡迎用「回報」告訴我們。</p>
+        <button onclick="practicePastByChapter()" class="mt-3 w-full sm:w-auto px-4 py-2 bg-slate-700 hover:bg-slate-600 text-cyan-300 rounded-lg text-sm font-bold transition">依科目、章節刷歷屆題 →</button>
       </div>
       <div id="past-list" class="space-y-4"></div>
     </section>
@@ -1100,7 +1106,15 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       filterFlashcards();
     }
 
-    const chapterOf = q => (window.CHAPTER_OF || {})[q.id] || '';
+    // 自編題用 id 查章節；歷屆題用「年度|科目|題號」查（對照表都在 chapters.js）
+    const chapterOf = q => q.year != null
+      ? (window.PAST_CHAPTER_OF || {})[`${q.year}|${q.subject}|${q.number}`] || ''
+      : (window.CHAPTER_OF || {})[q.id] || '';
+    // 刷題區的題目來源：自編＋歷屆／只有自編／只有歷屆
+    function questionPool() {
+      const src = document.getElementById('source-filter').value;
+      return src === 'self' ? allQuestions : src === 'past' ? pastQuestions : allQuestions.concat(pastQuestions);
+    }
     // 題目附圖（電路圖等）放在網站 repo 的 img/ 底下；白底讓深色模式也看得清楚
     // 點圖會開新分頁看原尺寸，手機可以兩指放大
     // 一題可以有多張圖，用 | 分隔（例如主圖＋四個選項的波形圖）
@@ -1197,17 +1211,33 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       renderQuestion();
     }
 
+    // 從歷屆區跳到刷題區，來源切成只刷歷屆，科目預設基本電學（全部科目時沒有章節可選）
+    function practicePastByChapter() {
+      document.getElementById('source-filter').value = 'past';
+      const sel = document.getElementById('subject-filter');
+      if (sel.value === 'ALL' || !pastQuestions.some(q => q.subject === sel.value)) sel.value = '基本電學';
+      currentMode = 'normal';
+      switchTab('quiz');
+      filterBySubject();
+    }
+
     // 換科目時重建章節選單；keepChapter=true 表示只換章節，保留目前選的章節
-    function filterBySubject(keepChapter) {
+    function filterBySubject(keepChapter, rebuildChapters) {
       const selected = document.getElementById('subject-filter').value;
       const chapSel = document.getElementById('chapter-filter');
-      const chapters = selected === 'ALL' ? [] : Object.keys((window.CHAPTERS || {})[selected] || {});
-      if (!keepChapter) {
-        const inSubject = allQuestions.filter(q => q.subject === selected);
+      const pool = questionPool();
+      const inSubject = pool.filter(q => q.subject === selected);
+      // 目前來源裡沒有題目的章節不列（例如只刷自編題時，「基本電學實習」只有歷屆題）
+      const chapters = selected === 'ALL' ? [] : Object.keys((window.CHAPTERS || {})[selected] || {})
+        .filter(c => inSubject.some(q => chapterOf(q) === c));
+      // 換來源時題數會變，要重建選單但盡量留在原本的章節
+      if (!keepChapter || rebuildChapters || (chapSel.value !== 'ALL' && !chapters.includes(chapSel.value))) {
+        const prev = chapSel.value;
         chapSel.innerHTML = `<option value="ALL">全部章節</option>` + chapters.map(c => {
           const n = inSubject.filter(q => chapterOf(q) === c).length;
           return `<option value="${esc(c)}">${esc(c)}（${n}）</option>`;
         }).join('');
+        if (keepChapter && chapters.includes(prev)) chapSel.value = prev;
       }
       document.getElementById('chapter-wrap').classList.toggle('hidden', chapters.length === 0);
       document.getElementById('subject-wrap').classList.remove('hidden');
@@ -1215,9 +1245,9 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       const chap = chapters.length ? chapSel.value : 'ALL';
 
       if (selected === 'ALL') {
-        questions = [...allQuestions];
+        questions = [...pool];
       } else {
-        questions = allQuestions.filter(q => q.subject === selected && (chap === 'ALL' || chapterOf(q) === chap));
+        questions = inSubject.filter(q => chap === 'ALL' || chapterOf(q) === chap);
       }
 
       for (let i = questions.length - 1; i > 0; i--) {
@@ -1234,7 +1264,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         document.getElementById('q-subject').innerText = selected === 'ALL' ? '全部' : selected;
         document.getElementById('q-source').innerHTML = '';
         document.getElementById('btn-report-q').classList.add('hidden');
-        document.getElementById('q-text-container').innerHTML = `<h2 class="text-lg font-medium leading-relaxed text-ink">【${esc(selected)}】目前尚無題目。</h2>`;
+        const pastOnly = document.getElementById('source-filter').value === 'past';
+        document.getElementById('q-text-container').innerHTML = pastOnly
+          ? `<h2 class="text-lg font-medium leading-relaxed text-ink">【${esc(selected)}】目前沒有統測歷屆題。</h2><p class="text-sm text-slate-400 mt-2">歷屆題目前收錄電機與電子群資電類的專業科目(一)(二)，可以把「只刷統測歷屆」改成「自編＋歷屆」。</p>`
+          : `<h2 class="text-lg font-medium leading-relaxed text-ink">【${esc(selected)}】目前尚無題目。</h2>`;
         document.getElementById('q-options').innerHTML = '';
         document.getElementById('q-explanation-box').classList.add('hidden');
       }
@@ -1439,7 +1472,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         const s = study.subj[subject] || (study.subj[subject] = { t: 0, c: 0 });
         s.t += 1;
         if (ok) s.c += 1;
-        const chap = chapterOf({ id });
+        const chap = chapterOf(questionById.get(id) || { id });
         if (chap) {
           const c = study.chap[`${subject}|${chap}`] || (study.chap[`${subject}|${chap}`] = { t: 0, c: 0 });
           c.t += 1;
@@ -1542,7 +1575,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       const chapSel = document.getElementById('chapter-filter');
       if (!Array.from(sel.options).some(o => o.value === subject)) return;
       sel.value = subject;
-      if (currentMode !== 'normal') { currentMode = 'normal'; sel.disabled = false; chapSel.disabled = false; }
+      // 弱點章節可能是歷屆題算出來的，練的時候兩種題目都要有
+      const srcSel = document.getElementById('source-filter');
+      srcSel.value = 'all';
+      if (currentMode !== 'normal') { currentMode = 'normal'; sel.disabled = false; chapSel.disabled = false; srcSel.disabled = false; }
       filterBySubject();
       if (chapter && Array.from(chapSel.options).some(o => o.value === chapter)) {
         chapSel.value = chapter;
@@ -2071,6 +2107,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('tab-quiz').classList.remove('hidden');
       document.getElementById('subject-filter').disabled = true;
       document.getElementById('chapter-filter').disabled = true;
+      document.getElementById('source-filter').disabled = true;
       document.getElementById('subject-wrap').classList.remove('hidden');
       document.getElementById('past-back').classList.add('hidden');
       setNavActive('quiz');
@@ -2196,6 +2233,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         currentMode = 'normal';
         document.getElementById('subject-filter').disabled = false;
         document.getElementById('chapter-filter').disabled = false;
+        document.getElementById('source-filter').disabled = false;
         if (wasOther || questions.length === 0) filterBySubject(true);
         else { document.getElementById('q-counter').innerText = `本區共 ${questions.length} 題`; renderQuestion(); }
       } else if (tab === 'exam') {
