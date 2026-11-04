@@ -1766,6 +1766,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     }
 
     // ==================== 必背公式字卡控制邏輯 ====================
+    // 一張卡有好幾條公式時用「｜」分隔，顯示時一條一行比較好讀
+    const formulaLines = t => String(t || '').split(/\s*｜\s*/).join('\n');
     function filterFlashcards() {
       const sub = document.getElementById('fc-subject-filter').value;
       filteredFlashcards = (sub === 'ALL') ? [...allFlashcards] : allFlashcards.filter(f => f.subject === sub);
@@ -1800,7 +1802,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('fc-counter').innerText = `第 ${currentFcIndex + 1} / ${filteredFlashcards.length} 張`;
       document.getElementById('fc-badge-subject').innerText = card.subject;
       document.getElementById('fc-main-title').innerText = card.title;
-      document.getElementById('fc-formula-text').innerText = card.formula;
+      document.getElementById('fc-formula-text').innerText = formulaLines(card.formula);
       document.getElementById('fc-note-text').innerText = `【重點解析】${card.note}`;
 
       const cardBox = document.getElementById('fc-card-box');
@@ -1841,7 +1843,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
               <span class="text-slate-500 font-mono">#${idx + 1}</span>
             </div>
             <div class="font-bold text-ink text-sm">${esc(f.title)}</div>
-            <div class="font-mono text-amber-400 text-xs bg-slate-950 p-2 rounded border border-slate-800 whitespace-pre-wrap">${esc(f.formula)}</div>
+            <div class="font-mono text-amber-400 text-xs bg-slate-950 p-2 rounded border border-slate-800 whitespace-pre-wrap">${esc(formulaLines(f.formula))}</div>
           </div>`).join('');
     }
 
