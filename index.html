@@ -1161,7 +1161,9 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     }
 
     // ==================== 統測歷屆 ====================
-    const PAPER_ORDER = ['英文', '數學(C)', '專業科目(一)', '專業科目(二)'];
+    const PAPER_ORDER = ['國文', '英文', '數學(C)', '專業科目(一)', '專業科目(二)'];
+    // 只收選擇題的試卷，沒收的部分是什麼（模擬考說明用）
+    const NON_MC = { '國文': '寫作測驗（作文）', '英文': '填充、句子重組、中譯英' };
     // 原試卷有非選擇題（英文 16 分）時，這裡只收選擇題，滿分會小於 100
     const paperFull = p => pastQuestions.filter(q => q.year === p.year && q.paper === p.paper && q.track === p.track).length * Number(p.points_per_q);
     function renderPastList() {
@@ -1296,7 +1298,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         document.getElementById('btn-report-q').classList.add('hidden');
         const pastOnly = document.getElementById('source-filter').value === 'past';
         document.getElementById('q-text-container').innerHTML = pastOnly
-          ? `<h2 class="text-lg font-medium leading-relaxed text-ink">【${esc(selected)}】目前沒有統測歷屆題。</h2><p class="text-sm text-slate-400 mt-2">歷屆題目前收錄電機與電子群資電類的英文、數學(C) 與專業科目(一)(二)，可以把「只刷統測歷屆」改成「自編＋歷屆」。</p>`
+          ? `<h2 class="text-lg font-medium leading-relaxed text-ink">【${esc(selected)}】目前沒有統測歷屆題。</h2><p class="text-sm text-slate-400 mt-2">歷屆題目前收錄電機與電子群資電類的國文、英文、數學(C) 與專業科目(一)(二)，可以把「只刷統測歷屆」改成「自編＋歷屆」。</p>`
           : `<h2 class="text-lg font-medium leading-relaxed text-ink">【${esc(selected)}】目前尚無題目。</h2>`;
         document.getElementById('q-options').innerHTML = '';
         document.getElementById('q-explanation-box').classList.add('hidden');
@@ -1912,7 +1914,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       const full = qs.length * pts;
       document.getElementById('past-intro-rules').innerHTML = [
         `本試卷共 ${qs.length} 題，每題 ${pts} 分，共 ${full} 分，答對給分，答錯不倒扣。`,
-        ...(full < 100 ? [`原試卷另有非選擇題 ${100 - full} 分（填充、句子重組、中譯英），沒辦法自動批改，這裡沒有收。`] : []),
+        ...(full < 100 ? [`原試卷另有非選擇題 ${100 - full} 分（${NON_MC[p.paper] || '非選擇題'}），沒辦法自動批改，這裡沒有收。`] : []),
         '均為單一選擇題，請選一個最適當答案；有關數值計算的題目，以最接近的答案為準。',
         `考試時間 ${p.duration_min} 分鐘，開始後不能暫停；剩 10 分鐘會提醒，時間到自動交卷。`,
         '作答中不會顯示對錯，可以隨時改答案，也可以按「☆ 標記」記下想再檢查的題目。',
