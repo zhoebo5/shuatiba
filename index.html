@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="刷題吧！">
   <meta name="theme-color" content="#f7f1e4">
   <meta name="google-site-verification" content="n6AwC0Cb5vFlVyuwA0FXFo7plyQYMmamNmq0pZLzcDc">
-  <meta name="description" content="刷題吧！是給高職資電類學生的免費線上刷題網站，涵蓋統測國文、英文、數學、基本電學、電子學、數位邏輯設計、程式設計實習、微處理機與電腦硬體裝修乙級，每題附詳解，還有統測歷屆試題 100 分鐘仿真模擬考（對照全國成績組距）、錯題本與排行榜。">
+  <meta name="description" content="刷題吧！是給高職資電類學生的免費線上刷題網站，涵蓋統測國文、英文、數學、基本電學、電子學、數位邏輯設計、程式設計實習、微處理機與電腦硬體裝修乙級，每題附詳解，還有 111～115 年統測歷屆試題仿真模擬考（數學(C)、資電類專一專二，對照全國成績組距）、錯題本與排行榜。">
   <link rel="canonical" href="https://zhoebo5.github.io/shuatiba/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="刷題吧！">
@@ -496,7 +496,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
   <!-- 網站介紹與隱私說明 -->
   <footer class="max-w-4xl mx-auto px-4 mt-10 mb-4 text-xs text-slate-400 leading-relaxed space-y-2">
-    <p><strong class="text-slate-300">刷題吧！</strong>是給高職資電類學生的免費刷題網站，涵蓋統測共同科目（國文、英文、數學）、專業科目一（基本電學、電子學）、專業科目二（數位邏輯設計、程式設計實習、微處理機），以及電腦硬體裝修乙級學科。「歷屆」收錄統測歷屆試題（目前有 115 年資電類專業科目一、二），可以照真實考試的 100 分鐘作答，交卷後對照官方成績組距看自己在全國的位置。</p>
+    <p><strong class="text-slate-300">刷題吧！</strong>是給高職資電類學生的免費刷題網站，涵蓋統測共同科目（國文、英文、數學）、專業科目一（基本電學、電子學）、專業科目二（數位邏輯設計、程式設計實習、微處理機），以及電腦硬體裝修乙級學科。「歷屆」收錄統測歷屆試題（目前有 111～115 年數學(C) 與資電類專業科目一、二），可以照真實考試的時間作答（數學 80 分鐘、專業科目 100 分鐘），交卷後對照官方成績組距看自己在全國的位置；歷屆題也分好章節，可以在刷題區只練某一章。</p>
     <p>題目為自編，並經 AI 輔助逐題查核；標示「✓ 已查核」的題目已檢查過答案與詳解。如果還是發現錯誤，請按題目旁的「⚑ 回報題目有誤」。</p>
     <p>隱私說明：網站會記錄你的暱稱、學校、頭像、作答統計與錯題，用來顯示個人戰績、錯題本和排行榜。排行榜會公開暱稱、頭像、學校與成績，不想公開學校的話，可以在「編輯個人檔案」把學校填成「不公開」。註冊用的 Email 只用來登入和重設密碼。「今日目標」和「各科表現」只存在你自己的瀏覽器裡。</p>
   </footer>
@@ -1136,14 +1136,14 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     }
 
     // ==================== 統測歷屆 ====================
-    const PAPER_ORDER = ['專業科目(一)', '專業科目(二)'];
+    const PAPER_ORDER = ['數學(C)', '專業科目(一)', '專業科目(二)'];
     function renderPastList() {
       const box = document.getElementById('past-list');
       if (pastQuestions.length === 0) {
         box.innerHTML = `
           <div class="bg-slate-800 p-8 rounded-xl border border-slate-700 text-center">
             <p class="font-bold text-ink mb-1">歷屆試題整理中</p>
-            <p class="text-sm text-slate-400">第一批會是 115 年電機與電子群資電類的專業科目(一)、(二)。</p>
+            <p class="text-sm text-slate-400">題庫載入中，或暫時連不上資料庫。</p>
           </div>`;
         return;
       }
@@ -1266,7 +1266,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         document.getElementById('btn-report-q').classList.add('hidden');
         const pastOnly = document.getElementById('source-filter').value === 'past';
         document.getElementById('q-text-container').innerHTML = pastOnly
-          ? `<h2 class="text-lg font-medium leading-relaxed text-ink">【${esc(selected)}】目前沒有統測歷屆題。</h2><p class="text-sm text-slate-400 mt-2">歷屆題目前收錄電機與電子群資電類的專業科目(一)(二)，可以把「只刷統測歷屆」改成「自編＋歷屆」。</p>`
+          ? `<h2 class="text-lg font-medium leading-relaxed text-ink">【${esc(selected)}】目前沒有統測歷屆題。</h2><p class="text-sm text-slate-400 mt-2">歷屆題目前收錄 111～115 年數學(C) 與電機與電子群資電類的專業科目(一)(二)，可以把「只刷統測歷屆」改成「自編＋歷屆」。</p>`
           : `<h2 class="text-lg font-medium leading-relaxed text-ink">【${esc(selected)}】目前尚無題目。</h2>`;
         document.getElementById('q-options').innerHTML = '';
         document.getElementById('q-explanation-box').classList.add('hidden');
