@@ -74,6 +74,7 @@ html{color-scheme:light} html[data-theme="dark"]{color-scheme:dark}
 @media(prefers-reduced-motion:no-preference){.opt-correct,.result-correct{animation:pop .3s ease-out} .opt-wrong{animation:shake .35s ease-out}}
 .report-btn{font-size:.75rem;padding:.25rem .65rem;border-radius:9999px;border:1px solid rgb(var(--slate-600));color:rgb(var(--slate-400));background:transparent;transition:all .15s;white-space:nowrap}
 .report-btn:hover{color:rgb(var(--rose-400));border-color:rgb(var(--rose-600));background:rgb(var(--rose-950))}
+.fav-btn:hover,.fav-on{color:rgb(var(--amber-400));border-color:rgb(var(--amber-700));background:rgb(var(--amber-950))}
 .src-badge,.ver-badge{display:inline-flex;align-items:center;font-size:.7rem;font-weight:600;padding:.2rem .55rem;border-radius:9999px}
 .src-badge{background:rgb(var(--slate-700));color:rgb(var(--slate-300))}
 .ver-ok{background:rgb(var(--emerald-950));color:rgb(var(--emerald-400));border:1px solid rgb(var(--emerald-700))}
@@ -225,6 +226,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
       <div class="flex flex-wrap justify-between items-center bg-slate-800 p-3.5 rounded-xl border border-slate-700 gap-2">
         <button id="past-back" onclick="switchTab('past')" class="hidden text-sm px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 font-medium transition">← 回歷屆列表</button>
+        <button id="fav-back" onclick="switchTab('mistakes')" class="hidden text-sm px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 font-medium transition">← 回收藏列表</button>
         <button id="task-exit" onclick="exitTask()" class="hidden text-sm px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 font-medium transition">← 離開今日任務</button>
         <div id="subject-wrap" class="flex flex-wrap items-center gap-2">
           <label class="text-sm text-slate-300 font-medium">特訓科目：</label>
@@ -263,7 +265,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
             <span id="q-subject" class="px-3 py-1 bg-cyan-950 text-cyan-300 border border-cyan-800 rounded-full text-xs font-semibold">載入中</span>
             <span id="q-source" class="flex flex-wrap items-center gap-1.5"></span>
           </div>
-          <button id="btn-report-q" type="button" onclick="openReportModal('quiz')" class="report-btn">⚑ 回報題目有誤</button>
+          <div class="flex items-center gap-1.5">
+            <button id="btn-fav-q" type="button" onclick="toggleFav()" aria-pressed="false" class="report-btn fav-btn">☆ 收藏</button>
+            <button id="btn-report-q" type="button" onclick="openReportModal('quiz')" class="report-btn">⚑ 回報題目有誤</button>
+          </div>
         </div>
         
         <div id="q-text-container" class="mb-6">
@@ -424,7 +429,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       <!-- 互動翻牌字卡主體 -->
       <div onclick="flipFlashcard()" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipFlashcard()}" id="fc-card-box" class="cursor-pointer select-none bg-slate-800 hover:bg-slate-800/90 border-2 border-cyan-700/80 rounded-2xl p-8 min-h-[260px] flex flex-col justify-between shadow-xl transition duration-200">
         <div class="flex justify-between items-center border-b border-slate-700/80 pb-3">
-          <span id="fc-badge-subject" class="px-3 py-1 bg-cyan-950 text-cyan-300 border border-cyan-800 rounded-full text-xs font-bold">載入中</span>
+          <span id="fc-badge-subject" class="shrink-0 whitespace-nowrap px-3 py-1 bg-cyan-950 text-cyan-300 border border-cyan-800 rounded-full text-xs font-bold">載入中</span>
           <span id="fc-side-indicator" class="text-xs font-mono uppercase tracking-wider px-2.5 py-0.5 rounded bg-slate-700 text-slate-300">正面：考點與定理名稱（點擊翻面看公式）</span>
         </div>
 
@@ -468,12 +473,14 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         <p class="text-xs text-slate-400 mt-1">題目取自技專校院入學測驗中心公告的歷屆試題，答案依官方公布；詳解由本站自行撰寫，若有錯誤歡迎用「回報」告訴我們。</p>
         <button onclick="practicePastByChapter()" class="mt-3 w-full sm:w-auto px-4 py-2 bg-slate-700 hover:bg-slate-600 text-cyan-300 rounded-lg text-sm font-bold transition">依科目、章節刷歷屆題 →</button>
       </div>
+      <div id="past-trend" class="hidden bg-slate-800 p-4 rounded-xl border border-slate-700"></div>
       <div id="past-list" class="space-y-4"></div>
     </section>
 
     <!-- ==================== 4. 錯題複習區 ==================== -->
     <section id="tab-mistakes" class="hidden space-y-4">
       <div id="mistake-list" class="space-y-4"></div>
+      <div id="fav-list" class="space-y-3"></div>
     </section>
 
     <!-- ==================== 5. 排行榜區 ==================== -->
@@ -1216,7 +1223,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     // 在每份試卷卡片上顯示自己最近一次與最高分（只讀得到自己的紀錄）
     async function showPastAttempts() {
       if (!currentUser || !pastPapers.length) return;
-      const { data } = await supabaseClient.from('past_attempts').select('paper_id, score, created_at').order('created_at', { ascending: false }).limit(300);
+      const { data, error } = await supabaseClient.from('past_attempts').select('paper_id, score, created_at').order('created_at', { ascending: false }).limit(300);
+      if (!error) renderPastTrend(data || []);
       if (!data || !data.length) return;
       document.querySelectorAll('[data-attempt]').forEach(el => {
         const rows = data.filter(r => r.paper_id === Number(el.dataset.attempt));
@@ -1224,6 +1232,58 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         const best = Math.max(...rows.map(r => Number(r.score)));
         el.textContent = `上次 ${Number(rows[0].score)} 分・最高 ${best} 分・考過 ${rows.length} 次`;
       });
+    }
+
+    // 模擬考成績走勢：每科一張小圖，實線是自己的分數、虛線是該份試卷那年的前標
+    // 只收選擇題的試卷（國文、英文）先換算成 100 分制，跟排名的算法一樣
+    function renderPastTrend(rows) {
+      const box = document.getElementById('past-trend');
+      box.classList.remove('hidden');
+      const byPaper = {};
+      rows.slice().reverse().forEach(r => {
+        const p = pastPapers.find(m => m.id === r.paper_id);
+        if (!p) return;
+        const full = paperFull(p);
+        const estimated = full > 0 && full < 100;
+        const score = estimated ? Math.round(Number(r.score) * 100 / full) : Number(r.score);
+        (byPaper[p.paper] = byPaper[p.paper] || []).push({ score, top: Number(p.top_std), year: p.year, estimated });
+      });
+      const papers = PAPER_ORDER.filter(k => byPaper[k]);
+      if (!papers.length) {
+        box.innerHTML = `<h2 class="text-base font-bold text-cyan-300">我的模擬考走勢</h2>
+          <p class="text-xs text-slate-400 mt-1">按下面任一份試卷的「模擬考」考完一次，這裡就會出現你的分數走勢，還有跟前標差幾分。</p>`;
+        return;
+      }
+      box.innerHTML = `<h2 class="text-base font-bold text-cyan-300">我的模擬考走勢</h2>
+        <p class="text-xs text-slate-400 mt-1"><span class="text-cyan-400">●─</span> 你的分數　<span class="text-amber-400">- -</span> 那份試卷當年的前標（分數都換成 100 分制，最多顯示最近 10 次）</p>
+        <div class="grid gap-3 sm:grid-cols-2 mt-3">${papers.map(k => trendCard(k, byPaper[k].slice(-10))).join('')}</div>`;
+    }
+    function trendCard(paper, pts) {
+      // Y 軸依分數範圍縮放（取到 10 分），進步幾分才看得出來；只考一次時前標畫成一條橫線
+      const W = 300, H = 90, P = 8, L = 24;
+      const vals = pts.flatMap(p => [p.score, p.top]);
+      const lo = Math.max(0, Math.floor((Math.min(...vals) - 5) / 10) * 10);
+      const hi = Math.min(100, Math.ceil((Math.max(...vals) + 5) / 10) * 10);
+      const x = i => pts.length === 1 ? (L + W - P) / 2 : L + i * (W - P - L) / (pts.length - 1);
+      const y = v => H - P - (Math.max(lo, Math.min(hi, v)) - lo) * (H - 2 * P) / (hi - lo);
+      const line = key => pts.length === 1 ? `M${L},${y(pts[0][key]).toFixed(1)} L${W - P},${y(pts[0][key]).toFixed(1)}`
+        : pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p[key]).toFixed(1)}`).join(' ');
+      const last = pts[pts.length - 1];
+      const gap = last.score - last.top;
+      const best = Math.max(...pts.map(p => p.score));
+      return `<div class="bg-slate-900 p-3 rounded-lg border border-slate-700">
+          <div class="flex justify-between items-baseline gap-2">
+            <span class="text-sm font-bold text-ink">${esc(paper)}</span>
+            <span class="text-xs text-slate-400">考 ${pts.length} 次・最高 ${best} 分</span>
+          </div>
+          <svg viewBox="0 0 ${W} ${H}" class="w-full h-auto mt-2" role="img" aria-label="${esc(paper)}分數走勢">
+            ${[lo, hi].map(v => `<line x1="${L}" x2="${W - P}" y1="${y(v)}" y2="${y(v)}" stroke="rgb(var(--slate-700))" stroke-width="1"/><text x="${L - 4}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="rgb(var(--slate-400))">${v}</text>`).join('')}
+            <path d="${line('top')}" fill="none" stroke="rgb(var(--amber-400))" stroke-width="1.5" stroke-dasharray="4 4"/>
+            ${pts.length > 1 ? `<path d="${line('score')}" fill="none" stroke="rgb(var(--cyan-400))" stroke-width="2.5" stroke-linejoin="round"/>` : ''}
+            ${pts.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.score).toFixed(1)}" r="3.5" fill="rgb(var(--cyan-400))"><title>${p.year} 年：${p.score} 分（前標 ${p.top}）</title></circle>`).join('')}
+          </svg>
+          <p class="text-xs mt-1 ${gap >= 0 ? 'text-emerald-400' : 'text-slate-300'}">最近一次 ${last.year} 年 ${last.score} 分${last.estimated ? '（估計）' : ''}，${gap >= 0 ? `超過前標 ${gap} 分` : `距離前標還差 ${-gap} 分`}</p>
+        </div>`;
     }
 
     function startPast(year, paper) {
@@ -1237,6 +1297,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('chapter-wrap').classList.add('hidden');
       document.getElementById('past-back').classList.remove('hidden');
       document.getElementById('task-exit').classList.add('hidden');
+      document.getElementById('fav-back').classList.add('hidden');
       document.getElementById('q-counter').innerText = `${year} 統測・${paper}（共 ${questions.length} 題）`;
       window.scrollTo({ top: 0 });
       renderQuestion();
@@ -1274,6 +1335,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('subject-wrap').classList.remove('hidden');
       document.getElementById('past-back').classList.add('hidden');
       document.getElementById('task-exit').classList.add('hidden');
+      document.getElementById('fav-back').classList.add('hidden');
       const chap = chapters.length ? chapSel.value : 'ALL';
 
       if (selected === 'ALL') {
@@ -1316,7 +1378,9 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
       const subjLabel = chapterOf(q) ? `${q.subject}・${chapterOf(q)}` : q.subject;
       document.getElementById('q-subject').innerText = currentMode === 'mistake' ? `[錯題重練] ${subjLabel}`
-        : currentMode === 'task' ? `[今日任務${isTaskReview(q) ? '・複習' : ''}] ${subjLabel}` : subjLabel;
+        : currentMode === 'task' ? `[今日任務${isTaskReview(q) ? '・複習' : ''}] ${subjLabel}`
+        : currentMode === 'fav' ? `[收藏] ${subjLabel}` : subjLabel;
+      updateFavBtn(q);
       document.getElementById('q-source').innerHTML = sourceBadge(q);
       document.getElementById('btn-report-q').classList.remove('hidden');
       document.getElementById('q-text-container').innerHTML = questionHTML(q, currentMode === 'past' ? q.number : idx + 1);
@@ -1440,7 +1504,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     const WEAK_MIN = 5; // 一科至少做幾題才參與「最弱」判定
     const CHAP_MIN = 3; // 一章至少做幾題才列入「最該加強的章節」
     function loadStudy() {
-      const base = { goal: 20, days: {}, subj: {}, chap: {} };
+      const base = { goal: 20, days: {}, subj: {}, chap: {}, fav: {} };
       try {
         const s = JSON.parse(localStorage.getItem(STUDY_KEY));
         if (s && typeof s === 'object') return { ...base, ...s };
@@ -1455,9 +1519,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
     // ---- 學習紀錄雲端同步（study_logs，每人一筆，只能讀寫自己的）----
     // 合併規則：同一天的題數、各科／章節的作答數取較大的一邊，避免同一份紀錄被加兩次
+    // 收藏以最後一次按的時間為準，取消的收藏才不會被另一台裝置加回來
     let studySyncReady = false, studySyncTimer = null, studyDirty = false;
     function mergeStudy(a, b) {
-      const out = { goal: a.goal, goalAt: a.goalAt || 0, days: { ...a.days }, subj: { ...a.subj }, chap: { ...a.chap } };
+      const out = { goal: a.goal, goalAt: a.goalAt || 0, days: { ...a.days }, subj: { ...a.subj }, chap: { ...a.chap }, fav: { ...a.fav } };
       if ((b.goalAt || 0) > out.goalAt) { out.goal = b.goal; out.goalAt = b.goalAt; }
       for (const [k, v] of Object.entries(b.days || {})) {
         const x = out.days[k];
@@ -1468,6 +1533,9 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
           const x = out[key][k];
           if (!x || v.t > x.t) out[key][k] = v;
         }
+      }
+      for (const [k, v] of Object.entries(b.fav || {})) {
+        if (!out.fav[k] || v.at > out.fav[k].at) out.fav[k] = v;
       }
       return out;
     }
@@ -1500,10 +1568,87 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       studyDirty = !cloud || JSON.stringify(cloud) !== JSON.stringify(study);
       if (studyDirty) pushStudy();
     }
-    loadStudy.blank = () => ({ goal: 20, days: {}, subj: {}, chap: {} });
+    loadStudy.blank = () => ({ goal: 20, days: {}, subj: {}, chap: {}, fav: {} });
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') pushStudy(); });
     window.addEventListener('online', () => pushStudy());
     const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    // ---- 收藏題目（存在 study.fav，跟學習紀錄一起同步）----
+    const isFav = id => !!(study.fav && study.fav[id] && study.fav[id].on);
+    function currentQuestion() {
+      return currentMode === 'mistake' ? mistakeQuestions[currentMistakeIndex] : questions[currentQIndex];
+    }
+    function updateFavBtn(q) {
+      const btn = document.getElementById('btn-fav-q');
+      const on = !!q && isFav(q.id);
+      btn.textContent = on ? '★ 已收藏' : '☆ 收藏';
+      btn.classList.toggle('fav-on', on);
+      btn.setAttribute('aria-pressed', on);
+    }
+    function setFav(id, on) {
+      study.fav = study.fav || {};
+      study.fav[id] = { on, at: Date.now() };
+      saveStudy();
+    }
+    function toggleFav() {
+      const q = currentQuestion();
+      if (!q) return;
+      setFav(q.id, !isFav(q.id));
+      updateFavBtn(q);
+    }
+    // 最近收藏的排前面；題目被下架（questionById 找不到）就略過
+    function favQuestions() {
+      return Object.entries(study.fav || {}).filter(([, v]) => v.on).sort((a, b) => b[1].at - a[1].at)
+        .map(([id]) => questionById.get(Number(id))).filter(Boolean);
+    }
+    function renderFavorites() {
+      const box = document.getElementById('fav-list');
+      const list = favQuestions();
+      if (!list.length) {
+        box.innerHTML = `
+          <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 mt-4">
+            <h2 class="text-base font-bold text-amber-400">我的收藏</h2>
+            <p class="text-xs text-slate-400 mt-1">答對但沒把握、想考前再看一次的題目，按題目右上角的「☆ 收藏」就會存到這裡。</p>
+          </div>`;
+        return;
+      }
+      box.innerHTML = `
+        <div class="flex flex-wrap justify-between items-center bg-amber-950/40 p-4 rounded-xl border border-amber-800/60 gap-2 mt-4">
+          <div>
+            <h2 class="text-lg font-bold text-amber-400">我的收藏（共 ${list.length} 題）</h2>
+            <p class="text-xs text-slate-300">練收藏的題目不會把它移出收藏，要拿掉請按「取消收藏」。</p>
+          </div>
+          <button onclick="startFav(0)" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 rounded-lg font-bold text-sm text-white shadow">練習收藏題</button>
+        </div>
+        ${list.map((q, idx) => `
+          <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-between items-center gap-4">
+            <div class="w-full">
+              <span class="text-xs px-2.5 py-0.5 bg-slate-700 text-cyan-300 rounded">${esc(q.year != null ? `${q.year} ${q.paper}` : q.subject)}</span>
+              <div class="mt-2">${mistakePreview(q, idx + 1)}</div>
+            </div>
+            <div class="shrink-0 flex flex-col gap-2">
+              <button onclick="startFav(${idx})" class="px-3 py-1.5 bg-slate-700 hover:bg-cyan-600 hover:text-white rounded-lg text-xs font-bold transition">練這題</button>
+              <button onclick="setFav(${q.id}, false); renderFavorites()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs text-slate-300 transition">取消收藏</button>
+            </div>
+          </div>`).join('')}`;
+    }
+    function startFav(startIndex) {
+      questions = favQuestions();
+      if (!questions.length) return;
+      currentMode = 'fav';
+      currentQIndex = startIndex;
+      document.getElementById('tab-mistakes').classList.add('hidden');
+      document.getElementById('tab-quiz').classList.remove('hidden');
+      document.getElementById('subject-wrap').classList.add('hidden');
+      document.getElementById('chapter-wrap').classList.add('hidden');
+      document.getElementById('past-back').classList.add('hidden');
+      document.getElementById('task-exit').classList.add('hidden');
+      document.getElementById('fav-back').classList.remove('hidden');
+      setNavActive('quiz');
+      document.getElementById('q-counter').innerText = `我的收藏（共 ${questions.length} 題）`;
+      window.scrollTo({ top: 0 });
+      renderQuestion();
+    }
 
     // rows: [[科目, 是否答對, 題目 id], ...]
     function recordAnswers(rows) {
@@ -1730,6 +1875,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('chapter-wrap').classList.add('hidden');
       document.getElementById('past-back').classList.add('hidden');
       document.getElementById('task-exit').classList.remove('hidden');
+      document.getElementById('fav-back').classList.add('hidden');
       updateTaskCounter();
       renderTask();
       renderQuestion();
@@ -2206,6 +2352,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     // ==================== 錯題本 (透過安全 RPC 調閱) ====================
     async function loadMistakeBook() {
       const container = document.getElementById('mistake-list');
+      renderFavorites();
       container.innerHTML = '<div class="text-center p-8 text-slate-400">調閱錯題紀錄中...</div>';
       if (!currentUser) {
         container.innerHTML = '<div class="text-center p-8 text-slate-400">個人資料尚未載入，無法讀取錯題本。</div>';
@@ -2304,6 +2451,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('subject-wrap').classList.remove('hidden');
       document.getElementById('past-back').classList.add('hidden');
       document.getElementById('task-exit').classList.add('hidden');
+      document.getElementById('fav-back').classList.add('hidden');
       setNavActive('quiz');
       document.getElementById('q-counter').innerText = `錯題重練 (共 ${mistakeQuestions.length} 題)`;
       renderQuestion();
