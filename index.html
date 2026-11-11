@@ -149,6 +149,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
   </nav>
 
   <main class="max-w-4xl mx-auto p-4 mt-2">
+    <!-- 統測倒數（考完隔天自動消失） -->
+    <p id="exam-countdown" class="hidden text-xs text-slate-400 mb-3"></p>
     
     <!-- 個人資訊與即時戰績列 -->
     <div class="bg-slate-800 p-4 rounded-xl mb-6 flex flex-wrap justify-between items-center gap-4 border border-slate-700 shadow">
@@ -516,8 +518,9 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
   <!-- 網站介紹與隱私說明 -->
   <footer class="max-w-4xl mx-auto px-4 mt-10 mb-4 text-xs text-slate-400 leading-relaxed space-y-2">
-    <p><strong class="text-slate-300">題電站</strong>是給高職資電類學生的免費刷題網站，涵蓋統測共同科目（國文、英文、數學）、專業科目一（基本電學、電子學）、專業科目二（數位邏輯設計、程式設計實習、微處理機），以及電腦硬體裝修乙級學科。「歷屆」收錄統測歷屆試題（目前有 111～115 年英文、數學(C) 與資電類專業科目一、二），可以照真實考試的時間作答（數學 80 分鐘、英文與專業科目 100 分鐘），交卷後對照官方成績組距看自己在全國的位置；歷屆題也分好章節，可以在刷題區只練某一章。</p>
+    <p><strong class="text-slate-300">題電站</strong>是給高職資電類學生的免費刷題網站，涵蓋統測共同科目（國文、英文、數學）、專業科目一（基本電學、電子學）、專業科目二（數位邏輯設計、程式設計實習、微處理機），以及電腦硬體裝修乙級學科。「歷屆」收錄統測歷屆試題（目前有 111～115 年國文、英文、數學(C) 與資電類專業科目一、二），可以照真實考試的時間作答（數學 80 分鐘、國文、英文與專業科目 100 分鐘），交卷後對照官方成績組距看自己在全國的位置；歷屆題也分好章節，可以在刷題區只練某一章。</p>
     <p>題目為自編，並經 AI 輔助逐題查核；標示「✓ 已查核」的題目已檢查過答案與詳解。如果還是發現錯誤，請按題目旁的「⚑ 回報題目有誤」。</p>
+    <p>覺得哪裡不好用、想要什麼功能，都可以跟我說：<button type="button" onclick="openFeedbackModal()" class="text-cyan-400 hover:text-cyan-300 underline font-bold">💬 意見回饋</button></p>
     <p>隱私說明：網站會記錄你的暱稱、學校、頭像、作答統計與錯題，用來顯示個人戰績、錯題本和排行榜。排行榜會公開暱稱、頭像、學校與成績，不想公開學校的話，可以在「編輯個人檔案」把學校填成「不公開」。註冊用的 Email 只用來登入和重設密碼。「今日目標」和「各科表現」只存在你自己的瀏覽器裡。</p>
   </footer>
 
@@ -568,6 +571,21 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       <div class="flex justify-end gap-2 mt-5">
         <button type="button" onclick="closeReportModal()" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm">取消</button>
         <button type="button" id="btn-report-submit" onclick="submitReport()" class="px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm">送出回報</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 意見回饋 Modal ==================== -->
+  <div id="feedback-modal" role="dialog" aria-modal="true" aria-labelledby="feedback-title" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div class="bg-slate-800 border border-slate-600 rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <h3 id="feedback-title" class="text-lg font-bold text-cyan-400 mb-1">意見回饋</h3>
+      <p class="text-xs text-slate-400 mb-4">哪裡不好用、看不懂、想要什麼功能都可以寫。題目本身有錯請改按題目旁的「⚑ 回報題目有誤」。</p>
+      <label for="feedback-text" class="block text-slate-300 mb-1 text-sm font-medium">你的意見（最多 500 字）：</label>
+      <textarea id="feedback-text" rows="5" maxlength="500" placeholder="例如：手機上模擬考的字太小、希望可以…" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-sm text-ink focus:outline-none focus:border-cyan-500"></textarea>
+      <p id="feedback-msg" class="hidden mt-3 p-2.5 rounded-lg text-xs font-bold"></p>
+      <div class="flex justify-end gap-2 mt-5">
+        <button type="button" onclick="closeFeedbackModal()" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm">取消</button>
+        <button type="button" id="btn-feedback-submit" onclick="submitFeedback()" class="px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm">送出</button>
       </div>
     </div>
   </div>
@@ -884,6 +902,37 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         btn.disabled = false;
       } else {
         setReportMsg('送出失敗，請稍後再試一次。', false);
+        btn.disabled = false;
+      }
+    }
+
+    // ---- 意見回饋（對整個網站，不是對某一題）----
+    function openFeedbackModal() {
+      document.getElementById('feedback-text').value = '';
+      document.getElementById('feedback-msg').classList.add('hidden');
+      document.getElementById('btn-feedback-submit').disabled = false;
+      document.getElementById('feedback-modal').classList.remove('hidden');
+    }
+    function closeFeedbackModal() { document.getElementById('feedback-modal').classList.add('hidden'); }
+    function setFeedbackMsg(text, ok) {
+      const m = document.getElementById('feedback-msg');
+      m.textContent = text;
+      m.className = 'mt-3 p-2.5 rounded-lg text-xs font-bold border ' + (ok ? 'bg-emerald-950 text-emerald-400 border-emerald-700' : 'bg-rose-950 text-rose-400 border-rose-700');
+    }
+    async function submitFeedback() {
+      const message = document.getElementById('feedback-text').value.trim().slice(0, 500);
+      if (!message) { setFeedbackMsg('請先寫一點內容', false); return; }
+      const btn = document.getElementById('btn-feedback-submit');
+      btn.disabled = true;
+      const sec = document.querySelector('main > section:not(.hidden)');
+      const { error } = await supabaseClient.from('site_feedback').insert({ message, page: sec ? sec.id.replace('tab-', '') : null });
+      if (!error) {
+        setFeedbackMsg('收到了，謝謝你！', true);
+        setTimeout(closeFeedbackModal, 1300);
+      } else if (error.code === '42501') {
+        setFeedbackMsg('今天已經送過很多則了，明天再來吧。', false);
+      } else {
+        setFeedbackMsg('送出失敗，請稍後再試一次。', false);
         btn.disabled = false;
       }
     }
@@ -2421,6 +2470,18 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     // 間隔重複：due_at 到了才算進度；沒有 due_at 是舊版資料，一律當作到期
     const isDue = q => !q.due_at || new Date(q.due_at) <= new Date();
     const taipeiDate = d => new Date(d).toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' });
+
+    // 統測倒數：116 學年度四技二專統測 2027-04-24、04-25（明年要改這裡的日期）
+    const EXAM_DAY = '2027-04-24';
+    (function renderCountdown() {
+      const days = Math.round((Date.parse(EXAM_DAY) - Date.parse(taipeiDate(Date.now()))) / 864e5);
+      if (days < -1) return;
+      const el = document.getElementById('exam-countdown');
+      el.innerHTML = days > 0
+        ? `📅 116 統測（4/24、4/25）倒數 <span class="font-mono font-bold text-cyan-400">${days}</span> 天`
+        : '📅 統測就是這兩天，加油！';
+      el.classList.remove('hidden');
+    })();
     function dueText(due) {
       const days = Math.round((Date.parse(taipeiDate(due)) - Date.parse(taipeiDate(Date.now()))) / 864e5);
       return days <= 0 ? '今天' : days === 1 ? '明天' : `${days} 天後`;
