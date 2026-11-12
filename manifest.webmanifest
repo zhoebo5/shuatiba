@@ -1,7 +1,7 @@
 {
-  "name": "題電站｜資電統測・乙級刷題",
-  "short_name": "題電站",
-  "description": "高職資電類統測與電腦硬體裝修乙級的免費刷題網站：詳解、模擬考、公式卡、錯題本",
+  "name": "Qharge｜統測刷題",
+  "short_name": "Qharge",
+  "description": "高職資電類統測的免費刷題網站：詳解、模擬考、公式卡、錯題本",
   "lang": "zh-TW",
   "start_url": "./",
   "scope": "./",
