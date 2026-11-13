@@ -635,11 +635,47 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     }
     const SUPABASE_URL = 'https://latjwxnlmlkhvsjumofk.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhdGp3eG5sbWxraHZzanVtb2ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzMjEyNzksImV4cCI6MjEwNzg5NzI3OX0.VY6-EsxbZBY_8OpbVH4A2o3bpjXETR0b-CNotGdlXrs';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // 送出類的請求（批改、回報、交卷）最多等 NET_TIMEOUT，超過就當成失敗（手機切到別的 App 再回來，舊連線常常卡住不回應）
+    // 載入題庫（GET）和上傳頭像資料量大、網路慢時本來就久，不限時
+    const NET_TIMEOUT = 8000;
+    const timedFetch = (input, init = {}) => {
+      const method = (init.method || 'GET').toUpperCase();
+      if (method === 'GET' || String(input.url || input).includes('/storage/')) return fetch(input, init);
+      const c = new AbortController();
+      const t = setTimeout(() => c.abort(), NET_TIMEOUT);
+      if (init.signal) init.signal.addEventListener('abort', () => c.abort());
+      return fetch(input, { ...init, signal: c.signal }).finally(() => clearTimeout(t));
+    };
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { fetch: timedFetch } });
 
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     let errTimer = null;
+
+    // ---- 斷線自動重試 ----
+    const withTimeout = (p, ms = NET_TIMEOUT + 2000) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
+    // 連線中斷、登入身分過期、個人資料還沒建好：這幾種重新連線後再送一次通常就會成功
+    const retryable = e => !e.code || ['23503', 'PGRST301', 'PGRST303'].includes(e.code) || /尚未登入|JWT|fetch|network|load failed|abort|逾時/i.test(e.message || '');
+    // 確認登入身分和個人資料都在，少了就補回來
+    async function ensureSession() {
+      const got = await withTimeout(supabaseClient.auth.getSession());
+      const s = got && got.data && got.data.session;
+      if (!s || !currentUser || currentUser.id !== s.user.id) await withTimeout(initUserSession());
+    }
+    // fn 每次呼叫都要重新送出一次請求；失敗且值得重試時，最多再送 tries 次
+    async function callRetry(fn, tries = 2) {
+      for (let i = 0; ; i++) {
+        const res = await withTimeout(Promise.resolve(fn()).then(r => r, e => ({ data: null, error: { message: String(e) } })))
+          || { data: null, error: { message: '連線逾時' } };
+        if (!res.error) { if (i) document.getElementById('app-error')?.remove(); return res; }
+        if (!retryable(res.error) || i >= tries) return res;
+        if (i === 0) showError('連線不穩，正在重新連線…', '');
+        await new Promise(r => setTimeout(r, 500 * (i + 1)));
+        await ensureSession().catch(() => {});
+      }
+    }
+    // 從別的 App 切回來時先把身分補好，不用等到作答失敗
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') ensureSession().catch(() => {}); });
     // detail 有值＝可重試的小錯誤（只顯示關閉鈕、自動消失）；沒有＝嚴重錯誤（提供重新整理）
     // ---- 頭像 ----
     const AVATAR_PRESETS = [['🐧','#fde68a'], ['💻','#bfdbfe'], ['🤖','#c7d2fe'], ['⚡','#fef08a'], ['🔌','#fecaca'], ['🧠','#fbcfe8'], ['🚀','#bbf7d0'], ['🐱','#fed7aa']];
@@ -887,7 +923,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       const btn = document.getElementById('btn-report-submit');
       btn.disabled = true;
       const note = document.getElementById('report-note').value.trim().slice(0, 200);
-      const { error } = await supabaseClient.from('question_reports').insert({ question_id: reportQ.id, reason: checked.value, note: note || null });
+      const qid = reportQ.id;
+      const { error } = await callRetry(() => supabaseClient.from('question_reports').insert({ question_id: qid, reason: checked.value, note: note || null }));
       if (!error) {
         setReportMsg('已送出，謝謝你！管理員會檢查這一題。', true);
         setTimeout(closeReportModal, 1300);
@@ -898,7 +935,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         setReportMsg('回報功能還沒啟用（管理員需先建立回報資料表）。', false);
         btn.disabled = false;
       } else {
-        setReportMsg('送出失敗，請稍後再試一次。', false);
+        setReportMsg('送出失敗，請再按一次；還是不行就重新整理頁面。', false);
         btn.disabled = false;
       }
     }
@@ -922,14 +959,14 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       const btn = document.getElementById('btn-feedback-submit');
       btn.disabled = true;
       const sec = document.querySelector('main > section:not(.hidden)');
-      const { error } = await supabaseClient.from('site_feedback').insert({ message, page: sec ? sec.id.replace('tab-', '') : null });
+      const { error } = await callRetry(() => supabaseClient.from('site_feedback').insert({ message, page: sec ? sec.id.replace('tab-', '') : null }));
       if (!error) {
         setFeedbackMsg('收到了，謝謝你！', true);
         setTimeout(closeFeedbackModal, 1300);
       } else if (error.code === '42501') {
         setFeedbackMsg('今天已經送過很多則了，明天再來吧。', false);
       } else {
-        setFeedbackMsg('送出失敗，請稍後再試一次。', false);
+        setFeedbackMsg('送出失敗，請再按一次；還是不行就重新整理頁面。', false);
         btn.disabled = false;
       }
     }
@@ -1020,7 +1057,13 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       return `<h2 class="text-lg font-medium leading-relaxed text-ink">${safe}</h2>`;
     }
 
-    async function initUserSession() {
+    // 同時間只跑一次（切回分頁時的補身分檢查可能跟開站時的重疊）
+    let initPromise = null;
+    function initUserSession() {
+      if (!initPromise) initPromise = initUserSessionOnce().finally(() => { initPromise = null; });
+      return initPromise;
+    }
+    async function initUserSessionOnce() {
       let { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) {
         const { data, error } = await supabaseClient.auth.signInAnonymously();
@@ -1467,16 +1510,16 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
       // 今日任務裡的錯題複習跟錯題重練一樣，不算進總刷題數
       const reviewing = currentMode === 'mistake' || (currentMode === 'task' && isTaskReview(q));
-      const { data: gradeResult, error } = await supabaseClient.rpc('submit_single_answer', {
+      const { data: gradeResult, error } = await callRetry(() => supabaseClient.rpc('submit_single_answer', {
         p_question_id: q.id,
         p_selected_option: selectedIndex,
         p_is_mistake_mode: reviewing
-      });
+      }));
 
       if (error || !gradeResult) {
         isCheckingAnswer = false;
         for (let i = 0; i < buttons.length; i++) buttons[i].disabled = false;
-        showError('這題暫時批改不了，請再點一次選項試試', error ? error.message : '無回傳結果');
+        showError('這題暫時批改不了，請再點一次選項；還是不行就重新整理頁面', error ? error.message : '無回傳結果');
         return;
       }
 
@@ -2315,13 +2358,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         selected_option: examUserAnswers[idx]
       }));
 
-      const { data: examRes, error } = pastExam
-        ? await supabaseClient.rpc('submit_past_exam', {
-            p_paper_id: pastExam.id,
-            p_answers: payload,
-            p_seconds: Math.round((Date.now() - examStartedAt) / 1000)
-          })
-        : await supabaseClient.rpc('submit_exam_answers', { p_answers: payload });
+      const seconds = Math.round((Date.now() - examStartedAt) / 1000);
+      const { data: examRes, error } = await callRetry(() => pastExam
+        ? supabaseClient.rpc('submit_past_exam', { p_paper_id: pastExam.id, p_answers: payload, p_seconds: seconds })
+        : supabaseClient.rpc('submit_exam_answers', { p_answers: payload }), 1);
 
       submitBtnTop.disabled = false;
       submitBtnTop.innerText = '提前交卷';
