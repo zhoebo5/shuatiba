@@ -74,6 +74,9 @@ html{color-scheme:light} html[data-theme="dark"]{color-scheme:dark}
 @media(prefers-reduced-motion:no-preference){.opt-correct,.result-correct{animation:pop .3s ease-out} .opt-wrong{animation:shake .35s ease-out}}
 .report-btn{font-size:.75rem;padding:.25rem .65rem;border-radius:9999px;border:1px solid rgb(var(--slate-600));color:rgb(var(--slate-400));background:transparent;transition:all .15s;white-space:nowrap}
 .report-btn:hover{color:rgb(var(--rose-400));border-color:rgb(var(--rose-600));background:rgb(var(--rose-950))}
+.ask-btn{font-size:.8125rem;font-weight:700;padding:.4rem .85rem;border-radius:9999px;border:1px solid rgb(var(--cyan-700));color:rgb(var(--cyan-400));background:transparent;transition:all .15s}
+.ask-btn:hover{background:rgb(var(--cyan-950))}
+.ask-btn.copied{border-color:rgb(var(--emerald-600));color:rgb(var(--emerald-400))}
 .fav-btn:hover,.fav-on{color:rgb(var(--amber-400));border-color:rgb(var(--amber-700));background:rgb(var(--amber-950))}
 .src-badge,.ver-badge{display:inline-flex;align-items:center;font-size:.7rem;font-weight:600;padding:.2rem .55rem;border-radius:9999px}
 .src-badge{background:rgb(var(--slate-700));color:rgb(var(--slate-300))}
@@ -285,6 +288,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
             <strong class="text-cyan-400">【詳解】</strong>
             <div id="q-explanation" class="mt-1 whitespace-pre-wrap"></div>
           </div>
+          <button id="btn-ask-ai" type="button" onclick="copyAskAI(this, lastAsk)" class="ask-btn mt-3">📋 複製問題給 AI</button>
           <button onclick="nextQuestion()" class="mt-4 w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 rounded-lg font-bold text-white shadow transition">
             下一題
           </button>
@@ -893,6 +897,84 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       const v = VERIFY_MAP[q.verify_status];
       return (q.source ? `<span class="src-badge">來源：${esc(q.source)}</span>` : '') +
              (v ? `<span class="ver-badge ${v[1]}">${v[0]}</span>` : '');
+    }
+
+    // ---- 複製問題給 AI：題目＋選的答案＋正解＋詳解＋家教指令，貼到任何 AI 都能問 ----
+    // 只在批改後（看得到詳解時）出現，作答中拿不到答案
+    let lastAsk = null, examAsk = [];
+    function askAIText(a) {
+      const q = a.q;
+      const opts = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+      const also = (a.accepted || []).filter(i => i !== a.correct).map(i => opts[i]).filter(Boolean);
+      const picked = a.picked == null ? '沒有作答'
+        : (opts[a.picked] || '') + (a.picked === a.correct || (a.accepted || []).includes(a.picked) ? '（答對了，但想弄懂為什麼）' : '');
+      const src = q.year != null ? (q.source || `${q.year} 統測・${q.paper}・第 ${q.number} 題`) : '';
+      return [
+        '我是高職資電類學生，正在準備統測，這題我看不懂。請當我的家教：',
+        '1. 先告訴我這題要用到哪些基本觀念，從最基礎的講起。',
+        '2. 一次只講一步，每講完一步問我懂了沒，等我回答再繼續。',
+        '3. 多用生活中的比喻。',
+        '4. 講完出一題類似的題目讓我練習，先不要給答案。',
+        '下面的正確答案和詳解已經核對過，請照這個答案講解。',
+        ...(q.image_url ? ['這題有附圖，我會把題目的圖截圖一起傳給你。'] : []),
+        '',
+        `【題目】${q.question_text}`,
+        '【選項】', ...opts,
+        `【我選的答案】${picked}`,
+        `【正確答案】${opts[a.correct] || ''}${also.length ? `（${also.join('、')} 也給分）` : ''}`,
+        `【詳解】${a.explanation || ''}`,
+        ...(src ? [`【出處】${src}`] : [])
+      ].join('\n');
+    }
+    function resetAskBtn(btn) {
+      if (!btn) return;
+      clearTimeout(btn._t);
+      btn.classList.remove('copied');
+      btn.textContent = '📋 複製問題給 AI';
+    }
+    async function copyAskAI(btn, a) {
+      if (!a) return;
+      const text = askAIText(a);
+      let ok = false;
+      try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+        // IG／LINE 內建瀏覽器常擋 clipboard API，改用舊的複製方式
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { ok = document.execCommand('copy'); } catch (e2) {}
+        ta.remove();
+      }
+      if (!ok) return showAskText(text);
+      btn.classList.add('copied');
+      btn.textContent = '✓ 已複製，貼到你常用的 AI 就能問';
+      clearTimeout(btn._t);
+      btn._t = setTimeout(() => resetAskBtn(btn), 4000);
+    }
+    // 複製不了就把整段攤開讓使用者自己長按複製
+    function showAskText(text) {
+      let box = document.getElementById('ask-ai-box');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'ask-ai-box';
+        box.className = 'fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4';
+        box.innerHTML = `
+          <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-xl p-4 w-full max-w-md space-y-3">
+            <p class="text-sm font-bold text-ink">這個瀏覽器不讓網頁複製，請長按下面的文字全選後複製</p>
+            <textarea readonly rows="10" class="w-full bg-slate-900 text-slate-200 border border-slate-600 rounded-lg p-2 text-xs"></textarea>
+            <button type="button" class="w-full py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-bold text-slate-200 transition">關閉</button>
+          </div>`;
+        box.querySelector('button').onclick = () => box.classList.add('hidden');
+        box.onclick = e => { if (e.target === box) box.classList.add('hidden'); };
+        document.body.appendChild(box);
+      }
+      const ta = box.querySelector('textarea');
+      ta.value = text;
+      box.classList.remove('hidden');
+      ta.focus();
+      ta.select();
     }
 
     // ---- 回報題目有誤 ----
@@ -1553,6 +1635,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         ? `<span class="result-icon">✓</span><span><b>答對了！</b><small>${note || (currentMode === 'mistake' ? '這題觀念已掌握，已自動從錯題本除名。' : '戰績 +1，保持節奏繼續作答。')}</small></span>`
         : `<span class="result-icon">✕</span><span><b>答錯了</b><small>${note || '已自動收錄進「錯題本」，考前再複習一次。'}</small></span>`;
       document.getElementById('q-explanation').innerText = explanation;
+      lastAsk = { q, picked: selectedIndex, correct: correctOption, accepted: gradeResult.accepted_options, explanation };
+      resetAskBtn(document.getElementById('btn-ask-ai'));
       expBox.classList.remove('hidden');
       expBox.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
 
@@ -2380,6 +2464,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
       const reviewList = document.getElementById('exam-review-list');
       let reviewHtml = '';
+      examAsk = [];
 
       examQuestions.forEach((q, idx) => {
         const r = resultMap.get(q.id) || { is_correct: false, correct_option: 0, explanation: '' };
@@ -2390,6 +2475,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         const userAnsText = (userAns !== null) ? parsedOptions[userAns] : '未作答';
         const alsoOk = (r.accepted_options || []).map(i => parsedOptions[i]).filter(Boolean);
         const correctAnsText = (parsedOptions[r.correct_option] || '') + (alsoOk.length ? `（${alsoOk.join('、')} 也給分）` : '');
+        examAsk[idx] = { q, picked: userAns, correct: r.correct_option, accepted: r.accepted_options, explanation: r.explanation };
 
         reviewHtml += `
           <div class="review-card ${isCorrect ? 'is-correct' : 'is-wrong'} p-4 rounded-xl bg-slate-900 border border-slate-700 space-y-2">
@@ -2405,6 +2491,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
             <div class="text-xs text-slate-300 bg-slate-800/80 p-3 rounded-lg mt-2 leading-relaxed whitespace-pre-wrap">
               <strong class="text-cyan-400">【詳解】</strong>${esc(r.explanation)}
             </div>
+            <button type="button" onclick="copyAskAI(this, examAsk[${idx}])" class="ask-btn">📋 複製問題給 AI</button>
           </div>
         `;
       });
