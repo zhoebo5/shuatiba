@@ -132,6 +132,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 .tutor-mode[aria-pressed="true"]{background:rgb(var(--amber-950));border-color:rgb(var(--amber-700));color:rgb(var(--amber-400))}
 .tutor-next{margin-top:.6rem;width:100%;padding:.55rem;border-radius:.6rem;font-weight:700;font-size:.875rem;color:#fff;background:rgb(var(--amber-600))}
 .tutor-next:hover{background:rgb(var(--amber-500))}
+.tutor-sound{align-self:flex-start;width:2.25rem;height:2.25rem;border-radius:9999px;border:1px solid rgb(var(--slate-600));background:rgb(var(--slate-800));font-size:1rem;line-height:1}
 @keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
 @media(prefers-reduced-motion:no-preference){.tutor-cat .eye{animation:blink 4.5s infinite;transform-box:view-box}}
 </style>
@@ -347,6 +348,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
                 <div class="tutor-name">叮噹老師</div>
                 <div id="tutor-step" class="tutor-step"></div>
               </div>
+              <button id="tutor-sound" type="button" onclick="toggleTutorSound()" class="tutor-sound ml-auto"></button>
             </div>
             <div id="tutor-bubble" class="tutor-bubble" onclick="tutorSkip()" aria-hidden="true"></div>
             <div id="tutor-live" class="sr-only" aria-live="polite"></div>
@@ -1098,6 +1100,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('btn-tutor').classList.add('hidden');
       const box = document.getElementById('tutor');
       box.classList.remove('hidden');
+      updateSoundBtn();
+      tutorMeow();
       tutorMode('steps');
       box.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
     }
@@ -1124,26 +1128,144 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       const bubble = document.getElementById('tutor-bubble');
       document.getElementById('tutor-live').textContent = text;
       bubble._full = text;
+      tutorSpeak(text);
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { bubble.textContent = text; return; }
-      const chars = Array.from(text), cat = document.getElementById('tutor-cat');
+      const chars = Array.from(text);
       const delay = Math.max(12, Math.min(35, 3500 / chars.length)); // 長的段落打快一點，整段大約 3.5 秒內打完
       let i = 0;
       bubble.textContent = '';
       tutorTimer = setInterval(() => {
         i += 1;
         bubble.textContent = chars.slice(0, i).join('');
-        if (i % 4 === 0) cat.classList.toggle('talking');
-        if (i >= chars.length) tutorStop();
+        if (i % 3 === 0) tutorBlip();
+        if (i >= chars.length) tutorTypeDone();
       }, delay);
-      cat.classList.add('talking');
+      tutorMouth();
     }
-    function tutorStop() {
+    // 打字停下（打完或點泡泡跳過），聲音照講
+    function tutorTypeDone() {
       if (tutorTimer) { clearInterval(tutorTimer); tutorTimer = null; }
-      document.getElementById('tutor-cat').classList.remove('talking');
       const bubble = document.getElementById('tutor-bubble');
       if (bubble._full != null) bubble.textContent = bubble._full;
     }
-    function tutorSkip() { if (tutorTimer) tutorStop(); }
+    function tutorStop() {
+      tutorTypeDone();
+      tutorHush();
+    }
+    function tutorSkip() { if (tutorTimer) tutorTypeDone(); }
+
+    // 嘴巴：還在打字或還在念就一開一合
+    let tutorMouthTimer = null;
+    function tutorMouth() {
+      if (tutorMouthTimer || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const cat = document.getElementById('tutor-cat');
+      tutorMouthTimer = setInterval(() => {
+        const talking = tutorSpeaking && canSpeak && (speechSynthesis.speaking || speechSynthesis.pending);
+        if (!tutorTimer && !talking) {
+          clearInterval(tutorMouthTimer); tutorMouthTimer = null;
+          cat.classList.remove('talking');
+        } else cat.classList.toggle('talking');
+      }, 140);
+    }
+
+    // 聲音：手機內建語音念講解＋Web Audio 合成的喵聲與打字聲，可關掉（記在這台裝置）
+    let tutorSoundOn = (() => { try { return localStorage.getItem('tutorSound') !== 'off'; } catch (e) { return true; } })();
+    let tutorSpeaking = false, tutorSpeakTok = 0, tutorAudio = null;
+    const canSpeak = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+    function updateSoundBtn() {
+      const b = document.getElementById('tutor-sound');
+      b.textContent = tutorSoundOn ? '🔊' : '🔇';
+      b.setAttribute('aria-label', tutorSoundOn ? '關掉聲音' : '打開聲音');
+      b.title = b.getAttribute('aria-label');
+    }
+    function toggleTutorSound() {
+      tutorSoundOn = !tutorSoundOn;
+      try { localStorage.setItem('tutorSound', tutorSoundOn ? 'on' : 'off'); } catch (e) {}
+      updateSoundBtn();
+      if (tutorSoundOn) tutorSpeak(document.getElementById('tutor-bubble')._full || '');
+      else tutorHush();
+    }
+    function tutorHush() {
+      tutorSpeakTok += 1;
+      tutorSpeaking = false;
+      if (canSpeak) speechSynthesis.cancel();
+    }
+    function tutorVoice() {
+      const vs = speechSynthesis.getVoices();
+      return vs.find(v => /zh[-_]TW/i.test(v.lang)) || vs.find(v => /zh[-_](Hant|HK)/i.test(v.lang)) || vs.find(v => /^zh/i.test(v.lang)) || null;
+    }
+    // 把符號和單位換成念得出來的中文
+    const TUTOR_SAY = [
+      [/\(([A-D])\)/g, ' $1 '], [/kΩ/g, ' 千歐姆'], [/MΩ/g, ' 百萬歐姆'], [/Ω/g, ' 歐姆'],
+      [/([\d)])\s*mA\b/g, '$1 毫安'], [/([\d)])\s*μA\b/g, '$1 微安'], [/([\d)])\s*mW\b/g, '$1 毫瓦'], [/([\d)])\s*mV\b/g, '$1 毫伏'],
+      [/([\d)])\s*kHz\b/g, '$1 千赫'], [/([\d)])\s*Hz\b/g, '$1 赫茲'], [/([\d)])\s*V\b/g, '$1 伏特'], [/([\d)])\s*A\b/g, '$1 安培'], [/([\d)])\s*W\b/g, '$1 瓦'],
+      [/°C/g, ' 度'], [/(毫伏|伏特|毫安|安培|瓦)\s*\/\s*/g, '$1每'], [/\//g, ' 除以 '], [/÷/g, ' 除以 '], [/×/g, ' 乘以 '],
+      [/[+＋]/g, ' 加 '], [/(^|[^\d)\s])(\s*)[−–](?=\s?\d)/g, '$1$2 負 '], [/[−–]/g, ' 減 '], [/≈/g, ' 約等於 '], [/≠/g, ' 不等於 '], [/[=＝]/g, ' 等於 '], [/</g, ' 小於 '], [/>/g, ' 大於 '],
+      [/(\d)\s*:\s*(?=\d)/g, '$1 比 '], [/↑/g, ' 變大'], [/↓/g, ' 變小'], [/π/g, ' 派 '], [/∫/g, ' 積分 '], [/[|^…]/g, ' '],
+      [/[→⇒]/g, '，所以 '], [/↔/g, '，也就是 '], [/√/g, ' 根號 '], [/～/g, ' 到 '], [/_/g, ' '], [/[・【】「」『』]/g, ' ']
+    ];
+    // iPhone 只准在按鈕的點擊裡開口，所以一定要同步呼叫，不能 setTimeout
+    function tutorSpeak(text) {
+      if (!tutorSoundOn || !canSpeak || !text) return;
+      tutorHush();
+      const tok = tutorSpeakTok;
+      const said = TUTOR_SAY.reduce((s, [re, to]) => s.replace(re, to), text);
+      // 一句一句排進去：長段落一次念，有些瀏覽器念到一半會斷掉
+      const parts = said.replace(/([。！？])/g, '$1\n').split(/\n+/).map(s => s.trim()).filter(Boolean);
+      if (!parts.length) return;
+      const voice = tutorVoice();
+      parts.forEach((p, i) => {
+        const u = new SpeechSynthesisUtterance(p);
+        u.lang = 'zh-TW';
+        if (voice) u.voice = voice;
+        u.rate = 1.05;
+        u.pitch = 1.15;
+        if (i === parts.length - 1) u.onend = u.onerror = () => { if (tok === tutorSpeakTok) tutorSpeaking = false; };
+        speechSynthesis.speak(u);
+      });
+      tutorSpeaking = true;
+      tutorMouth();
+    }
+    function tutorAC() {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!tutorSoundOn || !AC) return null;
+      try {
+        if (!tutorAudio) tutorAudio = new AC();
+        if (tutorAudio.state === 'suspended') tutorAudio.resume();
+      } catch (e) { return null; }
+      return tutorAudio;
+    }
+    function tutorMeow() {
+      const ac = tutorAC();
+      if (!ac) return;
+      const t = ac.currentTime, o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(560, t);
+      o.frequency.linearRampToValueAtTime(900, t + 0.09);
+      o.frequency.linearRampToValueAtTime(620, t + 0.28);
+      f.type = 'bandpass';
+      f.Q.value = 2.5;
+      f.frequency.setValueAtTime(900, t);
+      f.frequency.linearRampToValueAtTime(1500, t + 0.09);
+      f.frequency.linearRampToValueAtTime(800, t + 0.28);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.35, t + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+      o.connect(f); f.connect(g); g.connect(ac.destination);
+      o.start(t); o.stop(t + 0.32);
+    }
+    function tutorBlip() {
+      const ac = tutorAC();
+      if (!ac) return;
+      const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sine';
+      o.frequency.value = 1300;
+      g.gain.setValueAtTime(0.025, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+      o.connect(g); g.connect(ac.destination);
+      o.start(t); o.stop(t + 0.05);
+    }
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') tutorHush(); });
 
     // ---- 回報題目有誤 ----
     let reportQ = null;
