@@ -960,6 +960,42 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
     }
 
+    // ---- 新版本提示：iPhone 主畫面 App 切回來不會重新載入，回到前景時問伺服器網頁有沒有換過 ----
+    // 比對 sw.js 的 VERSION（每次上線都要升版號），檔案很小；考試中不跳，避免重新整理洗掉作答
+    let siteTag = null, siteCheckedAt = 0;
+    async function fetchSiteTag() {
+      const r = await fetch('sw.js', { cache: 'no-store' });
+      const m = r.ok && (await r.text()).match(/VERSION = '([^']+)'/);
+      return m ? m[1] : null;
+    }
+    async function checkSiteUpdate() {
+      if (!/^https?:$/.test(location.protocol) || !navigator.onLine || Date.now() - siteCheckedAt < 60000) return;
+      siteCheckedAt = Date.now();
+      try {
+        const tag = await fetchSiteTag();
+        if (!tag) return;
+        if (!siteTag) { siteTag = tag; return; }
+        if (tag !== siteTag && !isExamRunning) showUpdateBar();
+      } catch (e) {}
+      if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => {});
+    }
+    function showUpdateBar() {
+      let b = document.getElementById('update-bar');
+      if (!b) {
+        b = document.createElement('div');
+        b.id = 'update-bar';
+        b.setAttribute('role', 'status');
+        b.className = 'fixed inset-x-0 z-30 bg-cyan-600 text-white text-sm font-bold py-2 px-4 flex items-center justify-center gap-3 shadow-md';
+        b.style.top = 'var(--nav-h)';
+        b.innerHTML = `<span>有新版本</span>
+          <button type="button" onclick="location.reload()" class="px-3 py-1 rounded-lg bg-white text-cyan-700 text-xs font-bold">更新</button>
+          <button type="button" onclick="this.parentElement.remove()" class="px-2 py-1 text-xs font-semibold text-white">稍後</button>`;
+        document.body.appendChild(b);
+      }
+    }
+    window.addEventListener('load', () => { siteCheckedAt = 0; checkSiteUpdate(); });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkSiteUpdate(); });
+
     const VERIFY_MAP = { verified: ['✓ 已查核', 'ver-ok'], unverified: ['未查核', 'ver-no'], disputed: ['⚠ 有爭議', 'ver-dis'] };
     function sourceBadge(q) {
       if (!q || (!q.source && !q.verify_status)) return '';
