@@ -1227,7 +1227,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         const u = new SpeechSynthesisUtterance(p);
         u.lang = 'zh-TW';
         if (voice) try { u.voice = voice; } catch (e) {} // 設不了就用預設語音，不要讓整段停掉
-        u.rate = 1.2;
+        u.rate = 1.1;
         if (i === parts.length - 1) u.onend = u.onerror = () => { if (tok === tutorSpeakTok) tutorSpeaking = false; };
         speechSynthesis.speak(u);
       });
