@@ -117,6 +117,23 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 .subj-go{font-size:.75rem;font-weight:600;padding:.3rem .7rem;border-radius:9999px;background:rgb(var(--cyan-950));color:rgb(var(--cyan-400));border:1px solid rgb(var(--cyan-800));white-space:nowrap}
 .subj-go:hover{background:rgb(var(--cyan-600));color:#fff}
 @media(min-width:640px){.subj-row{grid-template-columns:10rem minmax(0,1fr) 7.5rem auto}.subj-bar{grid-column:auto;order:0}}
+/* 叮噹老師 */
+.tutor{margin-top:.9rem;padding:.85rem;border-radius:.9rem;background:rgb(var(--slate-950));border:1px solid rgb(var(--slate-700))}
+.tutor-head{display:flex;align-items:flex-end;gap:.5rem}
+.tutor-cat{flex-shrink:0;width:64px;height:64px}
+.tutor-cat svg{width:100%;height:100%}
+.tutor-cat .mouth-open{display:none} .tutor-cat.talking .mouth-open{display:inline} .tutor-cat.talking .mouth-closed{display:none}
+.tutor-name{font-size:.8rem;font-weight:700;color:rgb(var(--amber-400))}
+.tutor-bubble{position:relative;margin-top:.6rem;padding:.7rem .85rem;border-radius:.8rem;background:rgb(var(--slate-800));border:1px solid rgb(var(--slate-600));color:rgb(var(--ink));font-size:.9rem;line-height:1.75;white-space:pre-wrap;overflow-wrap:break-word;cursor:pointer;min-height:4.5rem}
+.tutor-bubble::before{content:"";position:absolute;left:26px;top:-7px;width:12px;height:12px;background:inherit;border-left:1px solid rgb(var(--slate-600));border-top:1px solid rgb(var(--slate-600));transform:rotate(45deg)}
+.tutor-step{font-size:.75rem;color:rgb(var(--slate-400))}
+.tutor-modes{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.6rem}
+.tutor-mode{font-size:.8rem;font-weight:600;padding:.35rem .75rem;border-radius:9999px;border:1px solid rgb(var(--slate-600));color:rgb(var(--slate-300));background:transparent}
+.tutor-mode[aria-pressed="true"]{background:rgb(var(--amber-950));border-color:rgb(var(--amber-700));color:rgb(var(--amber-400))}
+.tutor-next{margin-top:.6rem;width:100%;padding:.55rem;border-radius:.6rem;font-weight:700;font-size:.875rem;color:#fff;background:rgb(var(--amber-600))}
+.tutor-next:hover{background:rgb(var(--amber-500))}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@media(prefers-reduced-motion:no-preference){.tutor-cat .eye{animation:blink 4.5s infinite;transform-box:view-box}}
 </style>
   <!-- 預先產生的 Tailwind（改了 class 要重新產生，指令見 tools/tailwind.config.js） -->
   <link rel="stylesheet" href="tailwind.css">
@@ -288,7 +305,59 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
             <strong class="text-cyan-400">【詳解】</strong>
             <div id="q-explanation" class="mt-1 whitespace-pre-wrap"></div>
           </div>
-          <button id="btn-ask-ai" type="button" onclick="copyAskAI(this, lastAsk)" class="ask-btn mt-3">📋 複製問題給 AI</button>
+          <div class="flex flex-wrap gap-2 mt-3">
+            <button id="btn-tutor" type="button" onclick="openTutor()" class="ask-btn hidden">🎓 問叮噹老師</button>
+            <button id="btn-ask-ai" type="button" onclick="copyAskAI(this, lastAsk)" class="ask-btn">📋 複製問題給 AI</button>
+          </div>
+          <div id="tutor" class="tutor hidden">
+            <div class="tutor-head">
+              <div id="tutor-cat" class="tutor-cat" aria-hidden="true">
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                  <ellipse cx="100" cy="188" rx="56" ry="7" fill="#000" opacity=".08"/>
+                  <path d="M100 112c32 0 50 22 52 48 2 22-14 28-52 28s-54-6-52-28c2-26 20-48 52-48z" fill="#F4A65C" stroke="#E08F45" stroke-width="2"/>
+                  <path d="M56 146q8 3 11 11M144 146q-8 3-11 11" stroke="#E08A3E" stroke-width="4" fill="none" stroke-linecap="round"/>
+                  <path d="M100 124c16 0 26 14 26 30 0 18-12 28-26 28s-26-10-26-28c0-16 10-30 26-30z" fill="#FFFAF2"/>
+                  <path d="M150 172c22 2 30-14 24-28" fill="none" stroke="#F4A65C" stroke-width="10" stroke-linecap="round"/>
+                  <path d="M168 152l8 2M171 163l8 0" stroke="#E08A3E" stroke-width="3.5" stroke-linecap="round"/>
+                  <ellipse cx="82" cy="184" rx="12" ry="7" fill="#FFFAF2" stroke="#E9DFD0" stroke-width="2"/>
+                  <ellipse cx="118" cy="184" rx="12" ry="7" fill="#FFFAF2" stroke="#E9DFD0" stroke-width="2"/>
+                  <path d="M50 58l6-34 30 22z" fill="#F4A65C" stroke="#E08F45" stroke-width="2" stroke-linejoin="round"/><path d="M56 52l3-18 15 12z" fill="#F7B9B0"/>
+                  <path d="M150 58l-6-34-30 22z" fill="#F4A65C" stroke="#E08F45" stroke-width="2" stroke-linejoin="round"/><path d="M144 52l-3-18-15 12z" fill="#F7B9B0"/>
+                  <ellipse cx="100" cy="84" rx="58" ry="48" fill="#F4A65C" stroke="#E08F45" stroke-width="2"/>
+                  <path d="M100 58v10M90 60l1.5 7M110 60l-1.5 7" stroke="#E08A3E" stroke-width="4" stroke-linecap="round"/>
+                  <path d="M44 86q7 1 11-1M156 86q-7 1-11-1" stroke="#E08A3E" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+                  <ellipse cx="100" cy="112" rx="26" ry="17" fill="#FFFAF2"/>
+                  <ellipse cx="64" cy="104" rx="9" ry="5" fill="#F48A8A" opacity=".45"/>
+                  <ellipse cx="136" cy="104" rx="9" ry="5" fill="#F48A8A" opacity=".45"/>
+                  <g class="eye" style="transform-origin:100px 88px">
+                    <circle cx="80" cy="88" r="6" fill="#2E2A26"/><circle cx="82" cy="86" r="2" fill="#fff"/>
+                    <circle cx="120" cy="88" r="6" fill="#2E2A26"/><circle cx="122" cy="86" r="2" fill="#fff"/>
+                  </g>
+                  <g fill="none" stroke="#3A332C" stroke-width="2.6"><circle cx="80" cy="88" r="14"/><circle cx="120" cy="88" r="14"/><path d="M94 87q6-4 12 0"/></g>
+                  <path d="M95 101h10l-5 5z" fill="#F08A96"/>
+                  <path d="M74 108l-34-4M74 113l-33 3M126 108l34-4M126 113l33 3" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round"/>
+                  <path class="mouth-closed" d="M100 106v3M100 109q-6 6-10 1M100 109q6 6 10 1" fill="none" stroke="#3A332C" stroke-width="2.2" stroke-linecap="round"/>
+                  <g class="mouth-open"><path d="M100 106v3" stroke="#3A332C" stroke-width="2.2"/><ellipse cx="100" cy="114" rx="6" ry="5" fill="#8A3B2E"/></g>
+                  <ellipse cx="104" cy="40" rx="36" ry="12" fill="#2F3F6E" transform="rotate(10 104 40)"/>
+                  <ellipse cx="106" cy="35" rx="30" ry="9" fill="#3A4C82" transform="rotate(10 106 35)"/>
+                  <path d="M108 26q2-7 6-8" stroke="#2F3F6E" stroke-width="3" stroke-linecap="round" fill="none"/>
+                </svg>
+              </div>
+              <div class="pb-1">
+                <div class="tutor-name">叮噹老師</div>
+                <div id="tutor-step" class="tutor-step"></div>
+              </div>
+            </div>
+            <div id="tutor-bubble" class="tutor-bubble" onclick="tutorSkip()" aria-hidden="true"></div>
+            <div id="tutor-live" class="sr-only" aria-live="polite"></div>
+            <div class="tutor-modes">
+              <button type="button" class="tutor-mode" data-mode="steps" onclick="tutorMode('steps')">一步一步講</button>
+              <button type="button" class="tutor-mode" data-mode="simple" onclick="tutorMode('simple')">講簡單點</button>
+              <button type="button" class="tutor-mode" data-mode="detail" onclick="tutorMode('detail')">講詳細點</button>
+              <button type="button" class="tutor-mode" data-mode="extend" onclick="tutorMode('extend')">延伸觀念</button>
+            </div>
+            <button id="tutor-next" type="button" onclick="tutorNext()" class="tutor-next">下一步</button>
+          </div>
           <button onclick="nextQuestion()" class="mt-4 w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 rounded-lg font-bold text-white shadow transition">
             下一題
           </button>
@@ -977,6 +1046,69 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       ta.select();
     }
 
+    // ---- 叮噹老師：批改回傳 tutor（四段事先寫好的講解）才出現，逐字打出來，點泡泡直接看整段 ----
+    let tutorData = null, tutorModeNow = 'steps', tutorStepNow = 0, tutorTimer = null;
+    function setTutor(t) {
+      tutorData = t && Array.isArray(t.steps) && t.steps.length ? t : null;
+      closeTutor();
+    }
+    function closeTutor() {
+      tutorStop();
+      document.getElementById('tutor').classList.add('hidden');
+      document.getElementById('btn-tutor').classList.toggle('hidden', !tutorData);
+    }
+    function openTutor() {
+      if (!tutorData) return;
+      document.getElementById('btn-tutor').classList.add('hidden');
+      const box = document.getElementById('tutor');
+      box.classList.remove('hidden');
+      tutorMode('steps');
+      box.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
+    }
+    function tutorMode(m) {
+      tutorModeNow = m;
+      tutorStepNow = 0;
+      tutorRender();
+    }
+    function tutorRender() {
+      const steps = tutorData.steps, isSteps = tutorModeNow === 'steps';
+      document.querySelectorAll('#tutor .tutor-mode').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === tutorModeNow)));
+      document.getElementById('tutor-step').textContent = isSteps ? `第 ${tutorStepNow + 1}／${steps.length} 步` : '';
+      document.getElementById('tutor-next').textContent = isSteps && tutorStepNow < steps.length - 1 ? '下一步' : '我懂了';
+      tutorType(isSteps ? steps[tutorStepNow] : tutorData[tutorModeNow] || '');
+    }
+    function tutorNext() {
+      if (tutorModeNow === 'steps' && tutorStepNow < tutorData.steps.length - 1) {
+        tutorStepNow += 1;
+        tutorRender();
+      } else closeTutor();
+    }
+    function tutorType(text) {
+      tutorStop();
+      const bubble = document.getElementById('tutor-bubble');
+      document.getElementById('tutor-live').textContent = text;
+      bubble._full = text;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { bubble.textContent = text; return; }
+      const chars = Array.from(text), cat = document.getElementById('tutor-cat');
+      const delay = Math.max(12, Math.min(35, 3500 / chars.length)); // 長的段落打快一點，整段大約 3.5 秒內打完
+      let i = 0;
+      bubble.textContent = '';
+      tutorTimer = setInterval(() => {
+        i += 1;
+        bubble.textContent = chars.slice(0, i).join('');
+        if (i % 4 === 0) cat.classList.toggle('talking');
+        if (i >= chars.length) tutorStop();
+      }, delay);
+      cat.classList.add('talking');
+    }
+    function tutorStop() {
+      if (tutorTimer) { clearInterval(tutorTimer); tutorTimer = null; }
+      document.getElementById('tutor-cat').classList.remove('talking');
+      const bubble = document.getElementById('tutor-bubble');
+      if (bubble._full != null) bubble.textContent = bubble._full;
+    }
+    function tutorSkip() { if (tutorTimer) tutorStop(); }
+
     // ---- 回報題目有誤 ----
     let reportQ = null;
     function openReportModal(kind, idx) {
@@ -1562,6 +1694,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('btn-report-q').classList.remove('hidden');
       document.getElementById('q-text-container').innerHTML = questionHTML(q, currentMode === 'past' ? q.number : idx + 1);
       document.getElementById('q-explanation-box').classList.add('hidden');
+      setTutor(null);
 
       const optionsBox = document.getElementById('q-options');
       optionsBox.innerHTML = '';
@@ -1637,6 +1770,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('q-explanation').innerText = explanation;
       lastAsk = { q, picked: selectedIndex, correct: correctOption, accepted: gradeResult.accepted_options, explanation };
       resetAskBtn(document.getElementById('btn-ask-ai'));
+      setTutor(gradeResult.tutor);
       expBox.classList.remove('hidden');
       expBox.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
 
