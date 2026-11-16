@@ -2,7 +2,7 @@
 // 原則：批改、登入、頭像等 Supabase 請求一律走網路，絕不快取（避免舊答案、舊登入狀態）。
 // 網頁本體、樣式、程式：有網路就拿最新版（向伺服器確認過，不吃瀏覽器 10 分鐘的暫存）；沒網路才用上次存的版本。
 // 圖片和 CDN：先用存好的，背景再更新（內容幾乎不變，省流量）。
-const VERSION = 'v19';                 // 每次上線都要升一號（v16 → v17…）：網頁靠它判斷要不要跳「有新版本」
+const VERSION = 'v20';                 // 每次上線都要升一號（v16 → v17…）：網頁靠它判斷要不要跳「有新版本」
 const SHELL = 'shell-' + VERSION;
 const RUNTIME = 'runtime-' + VERSION;
 const SHELL_FILES = ['./', './index.html', './tailwind.css', './chapters.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];

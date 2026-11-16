@@ -1174,11 +1174,14 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     }
 
     // 聲音：手機內建語音念講解＋Web Audio 合成的喵聲與打字聲，可關掉（記在這台裝置）
-    let tutorSoundOn = (() => { try { return localStorage.getItem('tutorSound') !== 'off'; } catch (e) { return true; } })();
+    // 2026-11-16 用戶不喜歡手機內建語音，預錄聲音檔做好前整個關掉（連 🔊 按鈕一起藏）；要打開改成 true
+    const TUTOR_SOUND_READY = false;
+    let tutorSoundOn = TUTOR_SOUND_READY && (() => { try { return localStorage.getItem('tutorSound') !== 'off'; } catch (e) { return true; } })();
     let tutorSpeaking = false, tutorSpeakTok = 0, tutorAudio = null;
     const canSpeak = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
     function updateSoundBtn() {
       const b = document.getElementById('tutor-sound');
+      b.classList.toggle('hidden', !TUTOR_SOUND_READY);
       b.textContent = tutorSoundOn ? '🔊' : '🔇';
       b.setAttribute('aria-label', tutorSoundOn ? '關掉聲音' : '打開聲音');
       b.title = b.getAttribute('aria-label');
