@@ -1110,15 +1110,20 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       tutorStepNow = 0;
       tutorRender();
     }
+    // 每種講法可以是一段文字，也可以是好幾步（陣列，一次講一步）
+    function tutorParts() {
+      const v = tutorData[tutorModeNow];
+      return Array.isArray(v) && v.length ? v : [v || ''];
+    }
     function tutorRender() {
-      const steps = tutorData.steps, isSteps = tutorModeNow === 'steps';
+      const parts = tutorParts(), multi = parts.length > 1;
       document.querySelectorAll('#tutor .tutor-mode').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === tutorModeNow)));
-      document.getElementById('tutor-step').textContent = isSteps ? `第 ${tutorStepNow + 1}／${steps.length} 步` : '';
-      document.getElementById('tutor-next').textContent = isSteps && tutorStepNow < steps.length - 1 ? '下一步' : '我懂了';
-      tutorType(isSteps ? steps[tutorStepNow] : tutorData[tutorModeNow] || '');
+      document.getElementById('tutor-step').textContent = multi ? `第 ${tutorStepNow + 1}／${parts.length} 步` : '';
+      document.getElementById('tutor-next').textContent = tutorStepNow < parts.length - 1 ? '下一步' : '我懂了';
+      tutorType(parts[tutorStepNow]);
     }
     function tutorNext() {
-      if (tutorModeNow === 'steps' && tutorStepNow < tutorData.steps.length - 1) {
+      if (tutorStepNow < tutorParts().length - 1) {
         tutorStepNow += 1;
         tutorRender();
       } else closeTutor();
@@ -1190,9 +1195,13 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       tutorSpeaking = false;
       if (canSpeak) speechSynthesis.cancel();
     }
+    // 台灣中文優先；同語言裡挑品質好的（iPhone 下載的「加強版／高品質」語音比較不像機器人）
     function tutorVoice() {
       const vs = speechSynthesis.getVoices();
-      return vs.find(v => /zh[-_]TW/i.test(v.lang)) || vs.find(v => /zh[-_](Hant|HK)/i.test(v.lang)) || vs.find(v => /^zh/i.test(v.lang)) || null;
+      const rank = v => (/zh[-_]TW/i.test(v.lang) ? 0 : /zh[-_](Hant|HK)/i.test(v.lang) ? 10 : /^zh/i.test(v.lang) ? 20 : 99)
+        - (/premium|高品質/i.test(v.name + v.voiceURI) ? 3 : /enhanced|加強|neural|natural/i.test(v.name + v.voiceURI) ? 2 : 0);
+      const best = vs.slice().sort((a, b) => rank(a) - rank(b))[0];
+      return best && rank(best) < 90 ? best : null;
     }
     // 把符號和單位換成念得出來的中文
     const TUTOR_SAY = [
@@ -1217,9 +1226,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       parts.forEach((p, i) => {
         const u = new SpeechSynthesisUtterance(p);
         u.lang = 'zh-TW';
-        if (voice) u.voice = voice;
-        u.rate = 1.05;
-        u.pitch = 1.15;
+        if (voice) try { u.voice = voice; } catch (e) {} // 設不了就用預設語音，不要讓整段停掉
+        u.rate = 1.2;
         if (i === parts.length - 1) u.onend = u.onerror = () => { if (tok === tutorSpeakTok) tutorSpeaking = false; };
         speechSynthesis.speak(u);
       });
