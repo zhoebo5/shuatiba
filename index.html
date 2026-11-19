@@ -32,6 +32,9 @@ html[data-theme="dark"]{--ink:250 245 232;--slate-50:250 246 236;--slate-100:239
 html{color-scheme:light} html[data-theme="dark"]{color-scheme:dark}
 ::placeholder{color:rgb(var(--slate-500));opacity:1}
 :focus-visible{outline:2px solid rgb(var(--cyan-500));outline-offset:2px}
+/* 線條圖示（跟底部頁籤同一套）：HTML 用 <svg class="ic"><use href="#i-名稱"/></svg>，JS 用 ic('名稱') */
+.ic{display:inline-block;width:1.1em;height:1.1em;flex-shrink:0;vertical-align:-.2em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ic-fill{fill:currentColor}
 /* 頂部／底部頁籤 */
 .tab-bar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(6,1fr);gap:2px;background:rgb(var(--slate-800));border-top:1px solid rgb(var(--slate-700));padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 16px rgb(0 0 0/.08)}
 .tab-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:48px;padding:4px 2px;border-radius:10px;font-size:11px;line-height:1.2;color:rgb(var(--slate-400));transition:background .15s,color .15s}
@@ -57,12 +60,13 @@ html{color-scheme:light} html[data-theme="dark"]{color-scheme:dark}
 .opt-correct{background:rgb(var(--emerald-950));border:2px solid rgb(var(--emerald-600));font-weight:700}
 .opt-wrong{background:rgb(var(--rose-950));border:2px solid rgb(var(--rose-600));font-weight:700}
 .opt-dim{background:rgb(var(--slate-800));border-color:rgb(var(--slate-700));color:rgb(var(--slate-500));opacity:.6}
-.opt-badge{flex-shrink:0;font-family:system-ui,sans-serif;font-size:.75rem;font-weight:700;padding:.2rem .6rem;border-radius:9999px;color:#fff;white-space:nowrap}
+.opt-badge{display:inline-flex;align-items:center;gap:.2rem;flex-shrink:0;font-family:system-ui,sans-serif;font-size:.75rem;font-weight:700;padding:.2rem .6rem;border-radius:9999px;color:#fff;white-space:nowrap}
 .opt-correct .opt-badge{background:rgb(var(--emerald-600))} .opt-wrong .opt-badge{background:rgb(var(--rose-600))} .opt-selected .opt-badge{background:rgb(var(--cyan-600))}
 .result-correct{border-left:6px solid rgb(var(--emerald-600))!important;background:rgb(var(--emerald-950))!important}
 .result-wrong{border-left:6px solid rgb(var(--rose-600))!important;background:rgb(var(--rose-950))!important}
 .result-title{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem}
 .result-icon{flex-shrink:0;width:2.5rem;height:2.5rem;border-radius:9999px;display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:800;color:#fff}
+.result-icon .ic{width:1.4rem;height:1.4rem;stroke-width:3}
 .result-correct .result-icon{background:rgb(var(--emerald-600))} .result-wrong .result-icon{background:rgb(var(--rose-600))}
 .result-title b{display:block;font-size:1.125rem} .result-title small{display:block;font-size:.8rem;opacity:.85;font-weight:500}
 .result-correct .result-title b{color:rgb(var(--emerald-400))} .result-wrong .result-title b{color:rgb(var(--rose-400))}
@@ -72,14 +76,17 @@ html{color-scheme:light} html[data-theme="dark"]{color-scheme:dark}
 @keyframes pop{0%{transform:scale(.97)}60%{transform:scale(1.015)}100%{transform:scale(1)}}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 @media(prefers-reduced-motion:no-preference){.opt-correct,.result-correct{animation:pop .3s ease-out} .opt-wrong{animation:shake .35s ease-out}}
-.report-btn{font-size:.75rem;padding:.25rem .65rem;border-radius:9999px;border:1px solid rgb(var(--slate-600));color:rgb(var(--slate-400));background:transparent;transition:all .15s;white-space:nowrap}
+.report-btn{display:inline-flex;align-items:center;gap:.3rem;font-size:.75rem;padding:.25rem .65rem;border-radius:9999px;border:1px solid rgb(var(--slate-600));color:rgb(var(--slate-400));background:transparent;transition:all .15s;white-space:nowrap}
 .report-btn:hover{color:rgb(var(--rose-400));border-color:rgb(var(--rose-600));background:rgb(var(--rose-950))}
-.ask-btn{font-size:.8125rem;font-weight:700;padding:.4rem .85rem;border-radius:9999px;border:1px solid rgb(var(--cyan-700));color:rgb(var(--cyan-400));background:transparent;transition:all .15s}
+.ask-btn{display:inline-flex;align-items:center;gap:.35rem;font-size:.8125rem;font-weight:700;padding:.4rem .85rem;border-radius:9999px;border:1px solid rgb(var(--cyan-700));color:rgb(var(--cyan-400));background:transparent;transition:all .15s}
 .ask-btn:hover{background:rgb(var(--cyan-950))}
 .ask-btn.copied{border-color:rgb(var(--emerald-600));color:rgb(var(--emerald-400))}
+.q-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:2.5rem;height:2.5rem;border-radius:9999px;color:rgb(var(--slate-400));transition:background .15s,color .15s}
+.q-icon-btn .ic{width:1.25rem;height:1.25rem}
+.report-icon:hover{color:rgb(var(--rose-400));background:rgb(var(--rose-950))}
 .fav-btn:hover,.fav-on{color:rgb(var(--amber-400));border-color:rgb(var(--amber-700));background:rgb(var(--amber-950))}
-.src-badge,.ver-badge{display:inline-flex;align-items:center;font-size:.7rem;font-weight:600;padding:.2rem .55rem;border-radius:9999px}
-.src-badge{background:rgb(var(--slate-700));color:rgb(var(--slate-300))}
+.src-badge,.ver-badge{display:inline-flex;align-items:center;gap:.2rem;font-size:.7rem;font-weight:600;padding:.2rem .55rem;border-radius:9999px}
+.src-badge{padding:0;font-size:.75rem;font-weight:500;color:rgb(var(--slate-400))}
 .ver-ok{background:rgb(var(--emerald-950));color:rgb(var(--emerald-400));border:1px solid rgb(var(--emerald-700))}
 .ver-no{background:transparent;color:rgb(var(--slate-400));border:1px dashed rgb(var(--slate-500))}
 .ver-dis{background:rgb(var(--amber-950));color:rgb(var(--amber-400));border:1px solid rgb(var(--amber-700))}
@@ -105,11 +112,11 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 @media(prefers-reduced-motion:no-preference){.goal-pop{animation:pop .45s ease-out}}
 #subj-stats summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
 #subj-stats summary::-webkit-details-marker{display:none}
-#subj-stats summary::after{content:"▾";color:rgb(var(--slate-400));transition:transform .15s}
-#subj-stats[open] summary::after{transform:rotate(180deg)}
+#subj-stats summary::after{content:"";flex-shrink:0;width:.45rem;height:.45rem;margin-right:.25rem;border-right:2px solid rgb(var(--slate-400));border-bottom:2px solid rgb(var(--slate-400));transform:translateY(-2px) rotate(45deg);transition:transform .15s}
+#subj-stats[open] summary::after{transform:translateY(2px) rotate(-135deg)}
 .subj-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:.35rem .6rem;padding:.55rem .65rem;border-radius:.6rem;background:rgb(var(--slate-900));border:1px solid rgb(var(--slate-700))}
 .subj-name{font-size:.875rem;font-weight:600;color:rgb(var(--slate-100));display:flex;align-items:center;gap:.35rem;min-width:0}
-.subj-num{font-size:.75rem;color:rgb(var(--slate-400));font-family:ui-monospace,monospace;white-space:nowrap}
+.subj-num{font-size:.75rem;color:rgb(var(--slate-400));font-variant-numeric:tabular-nums;white-space:nowrap}
 .subj-bar{grid-column:1/-1;order:1;height:6px;border-radius:9999px;background:rgb(var(--slate-700));overflow:hidden}
 .subj-bar>div{height:100%;border-radius:inherit}
 .acc-hi{background:rgb(var(--emerald-600))} .acc-mid{background:rgb(var(--amber-500))} .acc-lo{background:rgb(var(--rose-600))}
@@ -132,7 +139,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 .tutor-mode[aria-pressed="true"]{background:rgb(var(--amber-950));border-color:rgb(var(--amber-700));color:rgb(var(--amber-400))}
 .tutor-next{margin-top:.6rem;width:100%;padding:.55rem;border-radius:.6rem;font-weight:700;font-size:.875rem;color:#fff;background:rgb(var(--amber-600))}
 .tutor-next:hover{background:rgb(var(--amber-500))}
-.tutor-sound{align-self:flex-start;width:2.25rem;height:2.25rem;border-radius:9999px;border:1px solid rgb(var(--slate-600));background:rgb(var(--slate-800));font-size:1rem;line-height:1}
+.tutor-sound{display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;width:2.25rem;height:2.25rem;border-radius:9999px;border:1px solid rgb(var(--slate-600));background:rgb(var(--slate-800));font-size:1rem;line-height:1}
 @keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
 @media(prefers-reduced-motion:no-preference){.tutor-cat .eye{animation:blink 4.5s infinite;transform-box:view-box}}
 </style>
@@ -142,13 +149,30 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
   <script src="chapters.js"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans pb-28 md:pb-12">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4zM15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4zM23 9l-6 6M17 9l6 6"/></symbol>
+  </svg>
 
   <!-- 頂部導覽列 -->
   <nav class="bg-slate-800 border-b border-slate-700 px-4 py-3 sticky top-0 z-20 shadow-md">
     <div class="max-w-4xl mx-auto flex flex-wrap justify-between items-center gap-2">
-      <h1 class="text-lg sm:text-xl font-bold text-cyan-400 tracking-wide">
-        Qharge<span class="hidden sm:inline ml-2 text-xs font-medium text-slate-400 tracking-normal">統測刷題</span>
-      </h1>
+      <div class="flex items-baseline gap-3 min-w-0">
+        <h1 class="text-lg sm:text-xl font-bold text-cyan-400 tracking-wide">
+          Qharge<span class="hidden sm:inline ml-2 text-xs font-medium text-slate-400 tracking-normal">統測刷題</span>
+        </h1>
+        <!-- 統測倒數（考完隔天自動消失） -->
+        <p id="exam-countdown" class="hidden text-xs text-slate-400 whitespace-nowrap"></p>
+      </div>
       <div class="flex items-center gap-3 ml-auto">
         <div class="tab-bar" id="tab-bar">
         <button onclick="switchTab('quiz')" id="nav-quiz" class="tab-btn" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg><span class="hidden md:inline">刷題區</span><span class="md:hidden">刷題</span></button>
@@ -170,39 +194,19 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
   </nav>
 
   <main class="max-w-4xl mx-auto p-4 mt-2">
-    <!-- 統測倒數（考完隔天自動消失） -->
-    <p id="exam-countdown" class="hidden text-xs text-slate-400 mb-3"></p>
     
-    <!-- 個人資訊與即時戰績列 -->
-    <div class="bg-slate-800 p-4 rounded-xl mb-6 flex flex-wrap justify-between items-center gap-4 border border-slate-700 shadow">
-      <div class="flex items-center gap-3">
-        <div id="user-avatar" class="shrink-0"></div>
-        <div>
-          <div class="flex items-center gap-2">
-            <span id="user-display" class="font-bold text-ink text-base">載入身分中...</span>
-            <span id="school-display" class="text-xs px-2 py-0.5 bg-slate-700 text-cyan-300 rounded">載入中</span>
-            <button onclick="openProfileModal()" class="text-xs text-amber-400 hover:text-amber-300 underline ml-1">編輯個人檔案</button>
-          </div>
-          <p id="auth-bar" class="text-xs mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5"></p>
-          <p id="install-row" class="hidden text-xs mt-1 text-slate-400 flex-wrap items-center gap-x-2"></p>
+    <!-- 個人資訊與戰績（壓成兩行，題目才會在手機第一個畫面出現） -->
+    <div class="bg-slate-800 px-4 py-3 rounded-xl mb-4 border border-slate-700 flex items-center gap-3">
+      <div id="user-avatar" class="shrink-0"></div>
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <span id="user-display" class="font-bold text-ink text-base">載入身分中...</span>
+          <span id="school-display" class="text-xs text-slate-400">載入中</span>
+          <button onclick="openProfileModal()" class="text-xs text-cyan-400 hover:text-cyan-300 underline">編輯個人檔案</button>
         </div>
-      </div>
-
-      <div class="flex gap-4 sm:gap-6 w-full sm:w-auto justify-around text-sm bg-slate-900 px-4 py-2.5 rounded-lg border border-slate-700">
-        <div class="text-center">
-          <div class="text-xs text-slate-400">總刷題數</div>
-          <div class="font-bold text-cyan-400 text-lg font-mono"><span id="stat-total">0</span> <span class="text-xs font-normal">題</span></div>
-        </div>
-        <div class="border-r border-slate-700"></div>
-        <div class="text-center">
-          <div class="text-xs text-slate-400">答對題數</div>
-          <div class="font-bold text-emerald-400 text-lg font-mono"><span id="stat-correct">0</span> <span class="text-xs font-normal">題</span></div>
-        </div>
-        <div class="border-r border-slate-700"></div>
-        <div class="text-center">
-          <div class="text-xs text-slate-400">目前正確率</div>
-          <div id="stat-acc" class="font-bold text-amber-400 text-lg font-mono">0%</div>
-        </div>
+        <p class="text-xs text-slate-400 mt-0.5 tabular-nums">已刷 <b id="stat-total" class="text-ink">0</b> 題・答對 <b id="stat-correct" class="text-ink">0</b> 題・正確率 <b id="stat-acc" class="text-ink">0%</b></p>
+        <p id="auth-bar" class="text-xs mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5"></p>
+        <p id="install-row" class="hidden text-xs mt-1 text-slate-400 flex-wrap items-center gap-x-2"></p>
       </div>
     </div>
 
@@ -212,7 +216,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       <div id="task-card" class="hidden bg-slate-800 p-4 rounded-xl border border-cyan-800">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="min-w-0">
-            <p class="text-sm font-bold text-ink">今日任務 <span id="task-progress" class="ml-1 font-mono text-cyan-400"></span></p>
+            <p class="text-sm font-bold text-ink">今日任務 <span id="task-progress" class="ml-1 tabular-nums text-cyan-400"></span></p>
             <p id="task-desc" class="text-xs text-slate-400 mt-0.5"></p>
           </div>
           <button id="task-btn" type="button" onclick="startTask()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg font-bold text-sm text-white shadow transition">開始今日任務</button>
@@ -220,40 +224,12 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         <div class="goal-bar mt-3"><div id="task-fill" class="goal-fill" style="width:0"></div></div>
       </div>
 
-      <!-- 今日目標與各科表現（紀錄存在本機瀏覽器） -->
-      <div id="goal-card" class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-          <div class="flex items-baseline gap-2">
-            <span class="text-sm font-bold text-ink">今日目標</span>
-            <span id="goal-count" class="font-mono font-bold text-cyan-400"><span id="goal-done">0</span> / <span id="goal-target">20</span> 題</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span id="streak-badge" class="streak"></span>
-            <select id="goal-select" onchange="setDailyGoal(this.value)" aria-label="每日目標題數" class="bg-slate-900 text-slate-200 border border-slate-600 rounded-lg px-2 py-1 text-xs">
-              <option value="10">10 題/天</option>
-              <option value="20">20 題/天</option>
-              <option value="30">30 題/天</option>
-              <option value="50">50 題/天</option>
-            </select>
-          </div>
-        </div>
-        <div class="goal-bar"><div id="goal-fill" class="goal-fill" style="width:0"></div></div>
-        <p id="goal-hint" class="text-xs text-slate-400 mt-2"></p>
-        <details id="subj-stats" class="mt-3 border-t border-slate-700 pt-3">
-          <summary class="cursor-pointer"><span class="text-sm font-bold text-slate-200">各科表現 <span id="subj-weak-hint" class="text-xs font-normal text-slate-400"></span></span></summary>
-          <div id="chap-weak" class="mt-3"></div>
-          <div id="subj-list" class="mt-3 space-y-2"></div>
-          <p class="text-[11px] text-slate-500 mt-2">刷題、錯題重練、模擬考、統測歷屆都會算進來。登入後紀錄會同步到雲端，換裝置也接得上。</p>
-        </details>
-      </div>
-
       <div class="flex flex-wrap justify-between items-center bg-slate-800 p-3.5 rounded-xl border border-slate-700 gap-2">
-        <button id="past-back" onclick="switchTab('past')" class="hidden text-sm px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 font-medium transition">← 回歷屆列表</button>
-        <button id="fav-back" onclick="switchTab('mistakes')" class="hidden text-sm px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 font-medium transition">← 回收藏列表</button>
-        <button id="task-exit" onclick="exitTask()" class="hidden text-sm px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 font-medium transition">← 離開今日任務</button>
-        <div id="subject-wrap" class="flex flex-wrap items-center gap-2">
-          <label class="text-sm text-slate-300 font-medium">科目：</label>
-          <select id="subject-filter" onchange="filterBySubject()" class="bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:border-cyan-500">
+        <button id="past-back" onclick="switchTab('past')" class="hidden text-sm px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 font-medium transition"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg> 回歷屆列表</button>
+        <button id="fav-back" onclick="switchTab('mistakes')" class="hidden text-sm px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 font-medium transition"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg> 回收藏列表</button>
+        <button id="task-exit" onclick="exitTask()" class="hidden text-sm px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 font-medium transition"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg> 離開今日任務</button>
+        <div id="subject-wrap" class="flex items-center gap-2 w-full sm:w-auto">
+          <select id="subject-filter" onchange="filterBySubject()" aria-label="科目" class="min-w-0 flex-1 sm:flex-none bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:border-cyan-500">
             <option value="ALL">全部科目隨機混刷</option>
             <option value="國文">國文 (共同科目)</option>
             <option value="英文">英文 (共同科目)</option>
@@ -264,32 +240,31 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
             <option value="程式設計實習">程式設計實習 (專二)</option>
             <option value="微處理機">微處理機 (專二)</option>
           </select>
-          <select id="source-filter" onchange="filterBySubject(true, true)" aria-label="題目來源" class="bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:border-cyan-500">
+          <select id="source-filter" onchange="filterBySubject(true, true)" aria-label="題目來源" class="shrink-0 bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:border-cyan-500">
             <option value="all">自編＋歷屆</option>
             <option value="self">只刷自編題</option>
             <option value="past">只刷統測歷屆</option>
           </select>
         </div>
-        <div id="chapter-wrap" class="hidden flex items-center gap-2">
-          <label for="chapter-filter" class="text-sm text-slate-300 font-medium">章節：</label>
-          <select id="chapter-filter" onchange="filterBySubject(true)" class="bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:border-cyan-500"></select>
+        <div id="chapter-wrap" class="hidden flex items-center gap-2 w-full sm:w-auto">
+          <select id="chapter-filter" onchange="filterBySubject(true)" aria-label="章節" class="min-w-0 flex-1 sm:flex-none bg-slate-900 text-cyan-300 border border-slate-600 rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:border-cyan-500"></select>
         </div>
-        <div class="flex items-center gap-3">
-          <span id="q-counter" class="text-xs text-slate-400 font-mono">題庫載入中...</span>
+        <div class="flex items-center justify-between gap-3 w-full sm:w-auto">
+          <span id="q-counter" class="text-xs text-slate-400 tabular-nums">題庫載入中...</span>
           <button onclick="nextQuestion()" class="text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 transition">跳過 / 換一題</button>
         </div>
       </div>
 
       <!-- 題目卡片 -->
-      <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
-        <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <div class="flex flex-wrap items-center gap-1.5">
-            <span id="q-subject" class="px-3 py-1 bg-cyan-950 text-cyan-300 border border-cyan-800 rounded-full text-xs font-semibold">載入中</span>
-            <span id="q-source" class="flex flex-wrap items-center gap-1.5"></span>
+      <div class="bg-slate-800 p-5 sm:p-6 rounded-xl border border-slate-700">
+        <div class="mb-3 flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p id="q-subject" class="text-sm font-bold text-cyan-400">載入中</p>
+            <p id="q-source" class="mt-0.5 flex flex-wrap items-center gap-1.5"></p>
           </div>
-          <div class="flex items-center gap-1.5">
-            <button id="btn-fav-q" type="button" onclick="toggleFav()" aria-pressed="false" class="report-btn fav-btn">☆ 收藏</button>
-            <button id="btn-report-q" type="button" onclick="openReportModal('quiz')" class="report-btn">⚑ 回報題目有誤</button>
+          <div class="flex items-center shrink-0 -mr-2 -mt-2">
+            <button id="btn-fav-q" type="button" onclick="toggleFav()" aria-pressed="false" aria-label="收藏" title="收藏" class="q-icon-btn fav-btn"><svg class="ic" aria-hidden="true"><use href="#i-star"/></svg></button>
+            <button id="btn-report-q" type="button" onclick="openReportModal('quiz')" aria-label="回報題目有誤" title="回報題目有誤" class="q-icon-btn report-icon"><svg class="ic" aria-hidden="true"><use href="#i-flag"/></svg></button>
           </div>
         </div>
         
@@ -307,8 +282,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
             <div id="q-explanation" class="mt-1 whitespace-pre-wrap"></div>
           </div>
           <div class="flex flex-wrap gap-2 mt-3">
-            <button id="btn-tutor" type="button" onclick="openTutor()" class="ask-btn hidden">🎓 問叮噹老師</button>
-            <button id="btn-ask-ai" type="button" onclick="copyAskAI(this, lastAsk)" class="ask-btn">📋 複製問題給 AI</button>
+            <button id="btn-tutor" type="button" onclick="openTutor()" class="ask-btn hidden"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg>問叮噹老師</button>
+            <button id="btn-ask-ai" type="button" onclick="copyAskAI(this, lastAsk)" class="ask-btn"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg>複製問題給 AI</button>
           </div>
           <div id="tutor" class="tutor hidden">
             <div class="tutor-head">
@@ -365,6 +340,33 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
           </button>
         </div>
       </div>
+
+      <!-- 今日目標與各科表現（放在題目下面，題目才會在手機第一個畫面出現；登入後同步到雲端） -->
+      <div id="goal-card" class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <div class="flex items-baseline gap-2">
+            <span class="text-sm font-bold text-ink">今日目標</span>
+            <span id="goal-count" class="tabular-nums font-bold text-cyan-400"><span id="goal-done">0</span> / <span id="goal-target">20</span> 題</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="streak-badge" class="streak"></span>
+            <select id="goal-select" onchange="setDailyGoal(this.value)" aria-label="每日目標題數" class="bg-slate-900 text-slate-200 border border-slate-600 rounded-lg px-2 py-1 text-xs">
+              <option value="10">10 題/天</option>
+              <option value="20">20 題/天</option>
+              <option value="30">30 題/天</option>
+              <option value="50">50 題/天</option>
+            </select>
+          </div>
+        </div>
+        <div class="goal-bar"><div id="goal-fill" class="goal-fill" style="width:0"></div></div>
+        <p id="goal-hint" class="text-xs text-slate-400 mt-2"></p>
+        <details id="subj-stats" class="mt-3 border-t border-slate-700 pt-3">
+          <summary class="cursor-pointer"><span class="text-sm font-bold text-slate-200">各科表現 <span id="subj-weak-hint" class="text-xs font-normal text-slate-400"></span></span></summary>
+          <div id="chap-weak" class="mt-3"></div>
+          <div id="subj-list" class="mt-3 space-y-2"></div>
+          <p class="text-[11px] text-slate-500 mt-2">刷題、錯題重練、模擬考、統測歷屆都會算進來。登入後紀錄會同步到雲端，換裝置也接得上。</p>
+        </details>
+      </div>
     </section>
 
     <!-- ==================== 2. 統測模擬考區 (50分鐘 / 25題) ==================== -->
@@ -420,10 +422,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-wrap justify-between items-center gap-3 sticky z-10 shadow-md" style="top:var(--nav-h)">
           <div class="flex items-center gap-3">
             <span id="exam-badge" class="px-3 py-1 bg-amber-950 text-amber-400 border border-amber-700 rounded-lg text-xs font-bold">模擬考進行中</span>
-            <span id="exam-progress-text" class="text-sm text-slate-300 font-mono">已作答 0 / 25 題</span>
+            <span id="exam-progress-text" class="text-sm text-slate-300 tabular-nums">已作答 0 / 25 題</span>
           </div>
           <div class="flex items-center gap-4">
-            <div class="bg-slate-900 px-3.5 py-1.5 rounded-lg border border-slate-700 font-mono text-lg font-bold text-cyan-400" id="exam-timer">
+            <div class="bg-slate-900 px-3.5 py-1.5 rounded-lg border border-slate-700 tabular-nums text-lg font-bold text-cyan-400" id="exam-timer">
               50:00
             </div>
             <button onclick="confirmSubmitExam()" id="btn-exam-submit-top" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg text-sm shadow transition">
@@ -432,12 +434,12 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
           </div>
         </div>
 
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
-          <div class="flex justify-between items-center mb-4">
-            <span class="flex flex-wrap items-center gap-1.5"><span id="exam-q-subject" class="px-3 py-1 bg-slate-700 text-cyan-300 rounded-full text-xs font-semibold">科目</span><span id="exam-q-source" class="flex flex-wrap items-center gap-1.5"></span></span>
-            <span class="flex items-center gap-2">
-              <button type="button" onclick="toggleExamFlag()" id="btn-exam-flag" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-600 text-slate-300 hover:border-amber-500 transition">☆ 標記</button>
-              <span id="exam-q-num" class="text-xs text-slate-400 font-mono">第 1 / 25 題</span>
+        <div class="bg-slate-800 p-5 sm:p-6 rounded-xl border border-slate-700">
+          <div class="flex justify-between items-start gap-3 mb-3">
+            <div class="min-w-0"><p id="exam-q-subject" class="text-sm font-bold text-cyan-400">科目</p><p id="exam-q-source" class="mt-0.5 flex flex-wrap items-center gap-1.5"></p></div>
+            <span class="flex items-center gap-2 shrink-0">
+              <button type="button" onclick="toggleExamFlag()" id="btn-exam-flag" class="inline-flex items-center gap-1 whitespace-nowrap px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-600 text-slate-300 hover:border-amber-500 transition"><svg class="ic" aria-hidden="true"><use href="#i-star"/></svg>標記</button>
+              <span id="exam-q-num" class="text-xs text-slate-400 tabular-nums whitespace-nowrap">第 1 / 25 題</span>
             </span>
           </div>
           <div id="exam-q-text-container" class="mb-6">
@@ -461,7 +463,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       <div id="exam-result" class="hidden space-y-4">
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 text-center shadow-lg">
           <p class="text-sm text-slate-400 mb-1">測驗結束・本次模擬考總分</p>
-          <div id="exam-score-number" class="text-5xl font-extrabold text-amber-400 font-mono my-2">100 分</div>
+          <div id="exam-score-number" class="text-5xl font-extrabold text-amber-400 tabular-nums my-2">100 分</div>
           <p id="exam-score-summary" class="text-sm text-slate-300 mb-5">答對 25 題 / 共 25 題（答錯與未作答題目已自動收錄至錯題本）</p>
           <div id="exam-rank" class="hidden max-w-md mx-auto mb-5 bg-slate-900 border border-slate-700 rounded-xl p-4 text-left text-sm text-slate-300 leading-relaxed"></div>
           <div class="flex justify-center gap-3">
@@ -495,7 +497,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
           </select>
         </div>
         <div class="flex items-center gap-3">
-          <span id="fc-counter" class="text-xs text-slate-400 font-mono">載入中...</span>
+          <span id="fc-counter" class="text-xs text-slate-400 tabular-nums">載入中...</span>
           <button onclick="shuffleFlashcards()" class="text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 font-medium transition">隨機洗牌</button>
         </div>
       </div>
@@ -504,7 +506,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       <div onclick="flipFlashcard()" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipFlashcard()}" id="fc-card-box" class="cursor-pointer select-none bg-slate-800 hover:bg-slate-800/90 border-2 border-cyan-700/80 rounded-2xl p-8 min-h-[260px] flex flex-col justify-between shadow-xl transition duration-200">
         <div class="flex justify-between items-center border-b border-slate-700/80 pb-3">
           <span id="fc-badge-subject" class="shrink-0 whitespace-nowrap px-3 py-1 bg-cyan-950 text-cyan-300 border border-cyan-800 rounded-full text-xs font-bold">載入中</span>
-          <span id="fc-side-indicator" class="text-xs font-mono uppercase tracking-wider px-2.5 py-0.5 rounded bg-slate-700 text-slate-300">正面</span>
+          <span id="fc-side-indicator" class="text-xs font-medium px-2.5 py-0.5 rounded bg-slate-700 text-slate-300">正面</span>
         </div>
 
         <div class="my-auto py-6 text-center">
@@ -525,7 +527,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         <button onclick="moveFlashcard(-1)" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl font-bold text-sm text-slate-200 transition">
           上一張
         </button>
-        <button onclick="flipFlashcard()" class="px-6 py-3 bg-amber-600 hover:bg-amber-500 rounded-xl font-bold text-sm text-white shadow transition">
+        <button onclick="flipFlashcard()" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl font-bold text-sm text-slate-200 transition">
           翻面
         </button>
         <button onclick="moveFlashcard(1)" class="flex-1 py-3 bg-cyan-600 hover:bg-cyan-500 rounded-xl font-bold text-sm text-white shadow transition">
@@ -545,7 +547,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
         <h2 class="text-lg font-bold text-cyan-300">統測歷屆試題</h2>
         <p class="text-xs text-slate-400 mt-1">題目取自技專校院入學測驗中心公告的歷屆試題，答案依官方公布；詳解由本站自行撰寫，若有錯誤歡迎用「回報」告訴我們。</p>
-        <button onclick="practicePastByChapter()" class="mt-3 w-full sm:w-auto px-4 py-2 bg-slate-700 hover:bg-slate-600 text-cyan-300 rounded-lg text-sm font-bold transition">依科目、章節刷歷屆題 →</button>
+        <button onclick="practicePastByChapter()" class="mt-3 w-full sm:w-auto px-4 py-2 bg-slate-700 hover:bg-slate-600 text-cyan-300 rounded-lg text-sm font-bold transition">依科目、章節刷歷屆題 <svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>
       </div>
       <div id="past-trend" class="hidden bg-slate-800 p-4 rounded-xl border border-slate-700"></div>
       <div id="past-list" class="space-y-4"></div>
@@ -590,10 +592,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
   <!-- 網站介紹與隱私說明 -->
   <footer class="max-w-4xl mx-auto px-4 mt-10 mb-4 text-xs text-slate-400 leading-relaxed space-y-2">
-    <p><strong class="text-slate-300">Qharge</strong> 是給高職資電類學生的免費刷題網站，涵蓋統測共同科目（國文、英文、數學）、專業科目一（基本電學、電子學）、專業科目二（數位邏輯設計、程式設計實習、微處理機）。「歷屆」收錄統測歷屆試題（目前有 111～115 年國文、英文、數學(C) 與資電類專業科目一、二），可以照真實考試的時間作答（數學 80 分鐘、國文、英文與專業科目 100 分鐘），交卷後對照官方成績組距看自己在全國的位置；歷屆題也分好章節，可以在刷題區只練某一章。</p>
-    <p>題目為自編，並經 AI 輔助逐題查核；標示「✓ 已查核」的題目已檢查過答案與詳解。如果還是發現錯誤，請按題目旁的「⚑ 回報題目有誤」。</p>
-    <p>覺得哪裡不好用、想要什麼功能，都可以跟我說：<button type="button" onclick="openFeedbackModal()" class="text-cyan-400 hover:text-cyan-300 underline font-bold">💬 意見回饋</button></p>
-    <p>隱私說明：網站會記錄你的暱稱、學校、頭像、作答統計與錯題，用來顯示個人戰績、錯題本和排行榜。排行榜會公開暱稱、頭像、學校與成績，不想公開學校的話，可以在「編輯個人檔案」把學校填成「不公開」。註冊用的 Email 只用來登入和重設密碼。「今日目標」和「各科表現」只存在你自己的瀏覽器裡。</p>
+    <p>Qharge 是高職資電類的統測刷題網站。自編題的答案和詳解經 AI 輔助逐題檢查，歷屆題答案依官方公布。題目有錯請按題目右上角的旗子回報；網站不好用或想要新功能，請寫<button type="button" onclick="openFeedbackModal()" class="text-cyan-400 hover:text-cyan-300 underline font-bold">意見回饋</button>。</p>
+    <p>隱私：網站會記錄你的暱稱、學校、頭像、作答統計和錯題。排行榜會公開暱稱、頭像、學校與成績，不想公開學校，可以在「編輯個人檔案」填「不公開」。Email 只用來登入和重設密碼。</p>
   </footer>
 
   <!-- ==================== 登入／註冊 Modal ==================== -->
@@ -651,7 +651,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
   <div id="feedback-modal" role="dialog" aria-modal="true" aria-labelledby="feedback-title" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
     <div class="bg-slate-800 border border-slate-600 rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
       <h3 id="feedback-title" class="text-lg font-bold text-cyan-400 mb-1">意見回饋</h3>
-      <p class="text-xs text-slate-400 mb-4">哪裡不好用、看不懂、想要什麼功能都可以寫。題目本身有錯請改按題目旁的「⚑ 回報題目有誤」。</p>
+      <p class="text-xs text-slate-400 mb-4">哪裡不好用、看不懂、想要什麼功能都可以寫。題目本身有錯，請按題目右上角的旗子回報。</p>
       <label for="feedback-text" class="block text-slate-300 mb-1 text-sm font-medium">你的意見（最多 500 字）：</label>
       <textarea id="feedback-text" rows="5" maxlength="500" placeholder="例如：手機上模擬考的字太小、希望可以…" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-sm text-ink focus:outline-none focus:border-cyan-500"></textarea>
       <p id="feedback-msg" class="hidden mt-3 p-2.5 rounded-lg text-xs font-bold"></p>
@@ -922,8 +922,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       const el = document.getElementById('install-row');
       let html = '';
       if (!isStandalone() && localStorage.getItem('install_dismissed') !== '1') {
-        if (deferredInstall) html = '<button onclick="doInstall()" class="text-cyan-400 hover:text-cyan-300 underline font-bold">📲 安裝成手機 App</button>';
-        else if (isIOS()) html = '<span>📲 想像 App 一樣開啟？用 Safari 點「分享」→「加入主畫面」。<b class="text-slate-300">建議先登入帳號再安裝</b>，否則 App 裡會是全新的訪客。</span>';
+        if (deferredInstall) html = '<button onclick="doInstall()" class="text-cyan-400 hover:text-cyan-300 underline font-bold">安裝成手機 App</button>';
+        else if (isIOS()) html = '<span>想像 App 一樣開啟？用 Safari 點「分享」→「加入主畫面」。<b class="text-slate-300">建議先登入帳號再安裝</b>，否則 App 裡會是全新的訪客。</span>';
         if (html) html += '<button onclick="dismissInstall()" class="text-slate-500 hover:text-slate-300 underline">不再顯示</button>';
       }
       el.innerHTML = html;
@@ -998,11 +998,13 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     window.addEventListener('load', () => { siteCheckedAt = 0; checkSiteUpdate(); });
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkSiteUpdate(); });
 
-    const VERIFY_MAP = { verified: ['✓ 已查核', 'ver-ok'], unverified: ['未查核', 'ver-no'], disputed: ['⚠ 有爭議', 'ver-dis'] };
+    const ic = (n, cls = '') => `<svg class="ic${cls ? ' ' + cls : ''}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+    // 題目全部查核過，「已查核」每題都一樣就不顯示，只標例外
+    const VERIFY_MAP = { unverified: ['未查核', 'ver-no'], disputed: [ic('alert') + '有爭議', 'ver-dis'] };
     function sourceBadge(q) {
       if (!q || (!q.source && !q.verify_status)) return '';
       const v = VERIFY_MAP[q.verify_status];
-      return (q.source ? `<span class="src-badge">來源：${esc(q.source)}</span>` : '') +
+      return (q.source ? `<span class="src-badge">${esc(q.source)}</span>` : '') +
              (v ? `<span class="ver-badge ${v[1]}">${v[0]}</span>` : '');
     }
 
@@ -1037,7 +1039,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       if (!btn) return;
       clearTimeout(btn._t);
       btn.classList.remove('copied');
-      btn.textContent = '📋 複製問題給 AI';
+      btn.innerHTML = ic('copy') + '複製問題給 AI';
     }
     async function copyAskAI(btn, a) {
       if (!a) return;
@@ -1056,7 +1058,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       }
       if (!ok) return showAskText(text);
       btn.classList.add('copied');
-      btn.textContent = '✓ 已複製，貼到你常用的 AI 就能問';
+      btn.innerHTML = ic('check') + '已複製，貼到你常用的 AI 就能問';
       clearTimeout(btn._t);
       btn._t = setTimeout(() => resetAskBtn(btn), 4000);
     }
@@ -1174,7 +1176,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     }
 
     // 聲音：手機內建語音念講解＋Web Audio 合成的喵聲與打字聲，可關掉（記在這台裝置）
-    // 2026-11-16 用戶不喜歡手機內建語音，預錄聲音檔做好前整個關掉（連 🔊 按鈕一起藏）；要打開改成 true
+    // 2026-11-16 用戶不喜歡手機內建語音，預錄聲音檔做好前整個關掉（連聲音按鈕一起藏）；要打開改成 true
     const TUTOR_SOUND_READY = false;
     let tutorSoundOn = TUTOR_SOUND_READY && (() => { try { return localStorage.getItem('tutorSound') !== 'off'; } catch (e) { return true; } })();
     let tutorSpeaking = false, tutorSpeakTok = 0, tutorAudio = null;
@@ -1182,7 +1184,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     function updateSoundBtn() {
       const b = document.getElementById('tutor-sound');
       b.classList.toggle('hidden', !TUTOR_SOUND_READY);
-      b.textContent = tutorSoundOn ? '🔊' : '🔇';
+      b.innerHTML = ic(tutorSoundOn ? 'sound' : 'mute');
       b.setAttribute('aria-label', tutorSoundOn ? '關掉聲音' : '打開聲音');
       b.title = b.getAttribute('aria-label');
     }
@@ -1639,7 +1641,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       return formatRich(`${num}. ${parts[0].split('\n')[0]}（短文略，按「重練」看全文）\n${parts[parts.length - 1]}`);
     }
     // 英文、國文選項是一般句子，不用等寬字；其他科的選項常有數字、程式碼，維持等寬
-    const optFont = q => ['英文', '國文'].includes(q.subject) ? 'text-sm' : 'font-mono text-sm';
+    const optFont = q => q.subject === '程式設計實習' ? 'font-mono text-sm' : 'text-sm';
     function questionHTML(q, num, noImage) {
       if (q.year == null) return formatQuestionText(`${num}. ${q.question_text}`);
       return formatRich(`${num}. ${q.question_text}`) + (noImage ? '' : questionImage(q));
@@ -1917,13 +1919,13 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
           b.className = `opt ${cls} ${optFont(q)}`;
           const tag = document.createElement('span');
           tag.className = 'opt-badge';
-          tag.textContent = label;
+          tag.innerHTML = label;
           b.appendChild(tag);
         };
         // 官方公告多個答案都給分時，選到其他正解也標成答對
-        if (i === selectedIndex && isCorrect) mark('opt-correct', '✓ 你答對了');
-        else if (i === correctOption) mark('opt-correct', isCorrect ? '✓ 也是正解' : '✓ 正確答案');
-        else if (i === selectedIndex && !isCorrect) mark('opt-wrong', '✕ 你的答案');
+        if (i === selectedIndex && isCorrect) mark('opt-correct', ic('check') + '你答對了');
+        else if (i === correctOption) mark('opt-correct', ic('check') + (isCorrect ? '也是正解' : '正確答案'));
+        else if (i === selectedIndex && !isCorrect) mark('opt-wrong', ic('x') + '你的答案');
         else b.className = `opt opt-dim ${optFont(q)}`;
       }
 
@@ -1934,8 +1936,8 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       title.className = 'result-title';
       const note = mistakeNote(isCorrect, gradeResult.mistake);
       title.innerHTML = isCorrect
-        ? `<span class="result-icon">✓</span><span><b>答對了！</b><small>${note || (currentMode === 'mistake' ? '這題觀念已掌握，已自動從錯題本除名。' : '戰績 +1，保持節奏繼續作答。')}</small></span>`
-        : `<span class="result-icon">✕</span><span><b>答錯了</b><small>${note || '已自動收錄進「錯題本」，考前再複習一次。'}</small></span>`;
+        ? `<span class="result-icon">${ic('check')}</span><span><b>答對了！</b><small>${note || (currentMode === 'mistake' ? '這題觀念已掌握，已自動從錯題本除名。' : '戰績 +1，保持節奏繼續作答。')}</small></span>`
+        : `<span class="result-icon">${ic('x')}</span><span><b>答錯了</b><small>${note || '已自動收錄進「錯題本」，考前再複習一次。'}</small></span>`;
       document.getElementById('q-explanation').innerText = explanation;
       lastAsk = { q, picked: selectedIndex, correct: correctOption, accepted: gradeResult.accepted_options, explanation };
       resetAskBtn(document.getElementById('btn-ask-ai'));
@@ -2063,7 +2065,9 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
     function updateFavBtn(q) {
       const btn = document.getElementById('btn-fav-q');
       const on = !!q && isFav(q.id);
-      btn.textContent = on ? '★ 已收藏' : '☆ 收藏';
+      btn.innerHTML = ic('star', on ? 'ic-fill' : '');
+      btn.setAttribute('aria-label', on ? '取消收藏' : '收藏');
+      btn.title = btn.getAttribute('aria-label');
       btn.classList.toggle('fav-on', on);
       btn.setAttribute('aria-pressed', on);
     }
@@ -2090,7 +2094,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         box.innerHTML = `
           <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 mt-4">
             <h2 class="text-base font-bold text-amber-400">我的收藏</h2>
-            <p class="text-xs text-slate-400 mt-1">答對但沒把握、想考前再看一次的題目，按題目右上角的「☆ 收藏」就會存到這裡。</p>
+            <p class="text-xs text-slate-400 mt-1">答對但沒把握、想考前再看一次的題目，按題目右上角的星星就會存到這裡。</p>
           </div>`;
         return;
       }
@@ -2182,10 +2186,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('goal-select').value = String(goal);
       document.getElementById('goal-fill').style.width = Math.min(100, day.n / goal * 100) + '%';
       card.classList.toggle('goal-done', day.met);
-      document.getElementById('streak-badge').innerText = streak > 0 ? `🔥 連續 ${streak} 天` : '';
+      document.getElementById('streak-badge').innerText = streak > 0 ? `連續 ${streak} 天` : '';
       const left = goal - day.n;
       document.getElementById('goal-hint').innerText = day.met
-        ? (justMet ? '🎉 今天達標了！明天繼續就能延長連續紀錄。' : '今天已經達標，想多刷也可以。')
+        ? (justMet ? '今天達標了！明天繼續就能延長連續紀錄。' : '今天已經達標，想多刷也可以。')
         : streak > 0 ? `再 ${left} 題就達標，連續紀錄會變成 ${streak + 1} 天。`
         : day.n > 0 ? `再 ${left} 題就達標。` : `今天還沒開始，先刷 ${goal} 題吧。`;
       if (justMet) {
@@ -2383,7 +2387,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('q-options').innerHTML = '';
       document.getElementById('q-explanation-box').classList.add('hidden');
       document.getElementById('q-text-container').innerHTML = `
-        <h2 class="text-lg font-bold text-emerald-400">🎉 今日任務完成！</h2>
+        <h2 class="text-lg font-bold text-emerald-400">今日任務完成！</h2>
         <p class="text-sm text-slate-400 mt-2">${task.review.length ? '錯題複習的進度已經記進錯題本。' : ''}答錯的題目會收進錯題本，之後的今日任務會再排給你複習。</p>
         <button type="button" onclick="exitTask()" class="mt-4 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg font-bold text-sm text-white shadow transition">繼續自由刷題</button>`;
       document.getElementById('task-card').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
@@ -2442,12 +2446,12 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       if (isFcFlipped) {
         cardBox.className = 'cursor-pointer select-none bg-slate-800 border-2 border-amber-500 rounded-2xl p-8 min-h-[260px] flex flex-col justify-between shadow-xl transition duration-200';
         sideInd.innerText = '背面';
-        sideInd.className = 'text-xs font-mono uppercase tracking-wider px-2.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-700';
+        sideInd.className = 'text-xs font-medium px-2.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-700';
         backDetails.classList.remove('hidden');
       } else {
         cardBox.className = 'cursor-pointer select-none bg-slate-800 hover:bg-slate-800/90 border-2 border-cyan-700/80 rounded-2xl p-8 min-h-[260px] flex flex-col justify-between shadow-xl transition duration-200';
         sideInd.innerText = '正面';
-        sideInd.className = 'text-xs font-mono uppercase tracking-wider px-2.5 py-0.5 rounded bg-slate-700 text-slate-300';
+        sideInd.className = 'text-xs font-medium px-2.5 py-0.5 rounded bg-slate-700 text-slate-300';
         backDetails.classList.add('hidden');
       }
     }
@@ -2470,7 +2474,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
           <div onclick="jumpToFlashcard(${idx})" class="cursor-pointer p-3.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-600 transition space-y-1.5">
             <div class="flex justify-between items-center">
               <span class="text-[11px] px-2 py-0.5 bg-slate-800 text-cyan-300 rounded font-bold">${esc(f.subject)}</span>
-              <span class="text-slate-500 font-mono">#${idx + 1}</span>
+              <span class="text-slate-500 tabular-nums">#${idx + 1}</span>
             </div>
             <div class="font-bold text-ink text-sm">${esc(f.title)}</div>
             <div class="font-mono text-amber-400 text-xs bg-slate-950 p-2 rounded border border-slate-800 whitespace-pre-wrap">${esc(formulaLines(f.formula))}</div>
@@ -2545,7 +2549,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         ...(full < 100 ? [`原試卷另有非選擇題 ${100 - full} 分（${NON_MC[p.paper] || '非選擇題'}），沒辦法自動批改，這裡沒有收。`] : []),
         '均為單一選擇題，請選一個最適當答案；有關數值計算的題目，以最接近的答案為準。',
         `考試時間 ${p.duration_min} 分鐘，開始後不能暫停；剩 10 分鐘會提醒，時間到自動交卷。`,
-        '作答中不會顯示對錯，可以隨時改答案，也可以按「☆ 標記」記下想再檢查的題目。',
+        '作答中不會顯示對錯，可以隨時改答案，也可以按「標記」記下想再檢查的題目。',
         '請準備紙筆當草稿紙，手機開勿擾，像真的考試一樣。',
         `交卷後依官方公布的 ${p.year} 年成績組距，換算你在 ${Number(p.attendees).toLocaleString()} 位到考生中的位置。`
           + (full < 100 ? '官方分數含非選擇題，所以會先把選擇題分數等比例換算成 100 分再比，是估計值。' : '')
@@ -2633,9 +2637,9 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       timerEl.innerText = `${mins}:${secs}`;
       
       if (examSecondsLeft <= (pastExam ? 600 : 300)) {
-        timerEl.className = 'bg-rose-950 px-3.5 py-1.5 rounded-lg border border-rose-600 font-mono text-lg font-bold text-rose-400 animate-pulse';
+        timerEl.className = 'bg-rose-950 px-3.5 py-1.5 rounded-lg border border-rose-600 tabular-nums text-lg font-bold text-rose-400 animate-pulse';
       } else {
-        timerEl.className = 'bg-slate-900 px-3.5 py-1.5 rounded-lg border border-slate-700 font-mono text-lg font-bold text-cyan-400';
+        timerEl.className = 'bg-slate-900 px-3.5 py-1.5 rounded-lg border border-slate-700 tabular-nums text-lg font-bold text-cyan-400';
       }
     }
 
@@ -2652,10 +2656,10 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       document.getElementById('exam-q-text-container').innerHTML = questionHTML(q, currentExamIndex + 1);
       const flagged = examFlags.has(currentExamIndex);
       const flagBtn = document.getElementById('btn-exam-flag');
-      flagBtn.textContent = flagged ? '★ 已標記' : '☆ 標記';
+      flagBtn.innerHTML = flagged ? ic('star', 'ic-fill') + '已標記' : ic('star') + '標記';
       flagBtn.className = flagged
-        ? 'px-2.5 py-1 rounded-lg text-xs font-bold border border-amber-500 bg-amber-950 text-amber-400 transition'
-        : 'px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-600 text-slate-300 hover:border-amber-500 transition';
+        ? 'inline-flex items-center gap-1 whitespace-nowrap px-2.5 py-1 rounded-lg text-xs font-bold border border-amber-500 bg-amber-950 text-amber-400 transition'
+        : 'inline-flex items-center gap-1 whitespace-nowrap px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-600 text-slate-300 hover:border-amber-500 transition';
 
       const optionsBox = document.getElementById('exam-q-options');
       optionsBox.innerHTML = '';
@@ -2666,7 +2670,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         const btn = document.createElement('button');
         btn.className = `opt${isSelected ? ' opt-selected' : ''} ${optFont(q)}`;
         btn.innerText = opt;
-        if (isSelected) { const tag = document.createElement('span'); tag.className = 'opt-badge'; tag.textContent = '✓ 已選'; btn.appendChild(tag); }
+        if (isSelected) { const tag = document.createElement('span'); tag.className = 'opt-badge'; tag.innerHTML = ic('check') + '已選'; btn.appendChild(tag); }
         btn.onclick = () => selectExamOption(optIdx);
         optionsBox.appendChild(btn);
       });
@@ -2707,7 +2711,7 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
         const isCurrent = (idx === currentExamIndex);
         const btn = document.createElement('button');
         
-        let cls = 'w-9 h-9 rounded-lg text-xs font-mono font-bold transition ';
+        let cls = 'w-9 h-9 rounded-lg text-xs tabular-nums font-bold transition ';
         if (isCurrent) {
           cls += 'ring-2 ring-amber-400 bg-cyan-700 text-white';
         } else if (examFlags.has(idx)) {
@@ -2784,17 +2788,17 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
           <div class="review-card ${isCorrect ? 'is-correct' : 'is-wrong'} p-4 rounded-xl bg-slate-900 border border-slate-700 space-y-2">
             <div class="flex justify-between items-center">
               <span class="text-xs px-2 py-0.5 bg-slate-800 text-cyan-300 rounded">${esc(q.subject)}${chapterOf(q) ? '・' + esc(chapterOf(q)) : ''}</span>
-              <span class="flex items-center gap-2"><span class="${isCorrect ? 'pill-ok' : 'pill-bad'}">${isCorrect ? '✓ 答對' : '✕ 答錯・已加入錯題本'}</span><button type="button" onclick="openReportModal('exam', ${idx})" class="report-btn">⚑ 回報有誤</button></span>
+              <span class="flex items-center gap-2"><span class="${isCorrect ? 'pill-ok' : 'pill-bad'}">${isCorrect ? ic('check') + '答對' : ic('x') + '答錯・已加入錯題本'}</span><button type="button" onclick="openReportModal('exam', ${idx})" class="report-btn">${ic('flag')}回報有誤</button></span>
             </div>
             <div class="font-medium text-ink text-sm">${questionHTML(q, idx + 1)}</div>
-            <div class="text-xs space-y-1 pt-1 font-mono">
+            <div class="text-xs space-y-1 pt-1 tabular-nums">
               <div class="${isCorrect ? 'text-emerald-400' : 'text-rose-400'}">你的答案：${esc(userAnsText)}</div>
               ${!isCorrect ? `<div class="text-emerald-400 font-bold">正確答案：${esc(correctAnsText)}</div>` : ''}
             </div>
             <div class="text-xs text-slate-300 bg-slate-800/80 p-3 rounded-lg mt-2 leading-relaxed whitespace-pre-wrap">
               <strong class="text-cyan-400">【詳解】</strong>${esc(r.explanation)}
             </div>
-            <button type="button" onclick="copyAskAI(this, examAsk[${idx}])" class="ask-btn">📋 複製問題給 AI</button>
+            <button type="button" onclick="copyAskAI(this, examAsk[${idx}])" class="ask-btn">${ic('copy')}複製問題給 AI</button>
           </div>
         `;
       });
@@ -2911,8 +2915,9 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
       if (days < -1) return;
       const el = document.getElementById('exam-countdown');
       el.innerHTML = days > 0
-        ? `📅 116 統測（4/24、4/25）倒數 <span class="font-mono font-bold text-cyan-400">${days}</span> 天`
-        : '📅 統測就是這兩天，加油！';
+        ? `統測倒數 <span class="tabular-nums font-bold text-cyan-400">${days}</span> 天`
+        : '統測就是這兩天，加油！';
+      el.title = '116 統測：4/24、4/25';
       el.classList.remove('hidden');
     })();
     function dueText(due) {
@@ -2999,16 +3004,16 @@ html[data-palette="cool"][data-theme="dark"]{--slate-50:245 248 252;--slate-100:
 
         return `
           <tr class="${rowBg} transition">
-            <td class="p-3.5 font-bold text-center text-xs font-mono text-slate-300">第 ${index + 1} 名</td>
+            <td class="p-3.5 font-bold text-center text-xs tabular-nums text-slate-300">第 ${index + 1} 名</td>
             <td class="p-3.5"><div class="flex items-center gap-3">${avatarHTML(isMe ? { ...row, avatar_url: row.avatar_url ?? (currentUser && currentUser.avatar_url) } : row, 36)}<div class="min-w-0">
               <span class="font-bold ${isMe ? 'text-cyan-300' : 'text-ink'}">${esc(row.nickname)}</span>
               ${isMe ? '<span class="ml-1.5 text-[10px] px-1.5 py-0.5 bg-cyan-600 text-white rounded">本人</span>' : ''}
               <div class="text-xs text-slate-400 mt-0.5">${esc(row.school || '高職資訊科')}</div>
             </div></div></td>
-            <td class="p-3.5 text-right font-mono">
+            <td class="p-3.5 text-right tabular-nums">
               <span class="text-emerald-400 font-bold">${row.correct_answered}</span> / <span class="text-cyan-300">${row.total_answered}</span>
             </td>
-            <td class="p-3.5 text-right font-mono font-bold text-amber-400">${esc(row.accuracy_rate)}%</td>
+            <td class="p-3.5 text-right tabular-nums font-bold text-amber-400">${esc(row.accuracy_rate)}%</td>
           </tr>
         `;
       }).join('');
